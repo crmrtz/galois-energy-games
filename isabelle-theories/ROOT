@@ -1,0 +1,25 @@
+chapter AFP
+
+session EnergyGames = HOL +
+  options [timeout = 600, quick_and_dirty = true]
+
+  sessions
+    "HOL-Lattice"
+    "HOL-Library"
+    "Coinductive"
+    "Well_Quasi_Orders"
+    "Parity_Game"
+    "Complete_Non_Orders"
+
+  theories
+    Energy_Game
+    Energy_Order 
+    Update 
+    Bispings_Energy_Game
+    Decidability 
+    List_Lemmas
+
+document_files
+    "introduction.tex"
+    "root.bib"
+    "root.tex"
