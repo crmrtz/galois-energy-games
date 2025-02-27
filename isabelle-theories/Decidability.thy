@@ -1147,10 +1147,10 @@ proof
           hence "apply_update (the (weight g g')) e \<noteq> None" using W
             using A1 A2 winning_budget_len.cases energy_Min_def
             by (metis (mono_tags, lifting) mem_Collect_eq)
-          have "(\<And>i A. (the (weight g g')) ! i = min_set A \<Longrightarrow> i \<in> A \<and> A \<subseteq> {x. x < length e})" using \<open>weight g g' \<noteq> None\<close> \<open>g \<notin> attacker\<close> valid_updates \<open>length e =dimension\<close>
+          have "(\<And>i A. (the (weight g g')) ! i = min_set A \<Longrightarrow> A\<noteq>{} \<and> A \<subseteq> {x. x < length e})" using \<open>weight g g' \<noteq> None\<close> \<open>g \<notin> attacker\<close> valid_updates \<open>length e =dimension\<close>
             by metis 
           from \<open>weight g g' \<noteq> None\<close> have "strat g' = the ((apply_inv_update (the (weight g g'))) (the (apply_update (the (weight g g')) e)))" using S by auto
-          thus "energy_leq (strat g') e" using inv_up_leq \<open>(\<And>i A. (the (weight g g')) ! i = min_set A \<Longrightarrow> i \<in> A \<and> A \<subseteq> {x. x < length e})\<close> \<open>apply_update (the (weight g g')) e \<noteq> None\<close>
+          thus "energy_leq (strat g') e" using inv_up_leq \<open>(\<And>i A. (the (weight g g')) ! i = min_set A \<Longrightarrow> A\<noteq>{} \<and> A \<subseteq> {x. x < length e})\<close> \<open>apply_update (the (weight g g')) e \<noteq> None\<close>
             by (metis \<open>weight g g' \<noteq> None\<close> valid_updates)
         qed
         hence "energy_leq (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}) e" using energy_sup_leq \<open>length e =dimension\<close>

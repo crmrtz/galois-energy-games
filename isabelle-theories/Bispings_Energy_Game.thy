@@ -4,9 +4,8 @@ theory Bispings_Energy_Game
   imports Energy_Game Update
 begin
 
-text\<open>Bisping's declining energy games are energy games with only valid updates
-and a fixed dimension. 
-In this theory we introduce Bisping's declining energy games. \<close>
+text\<open>Bisping's only considers declining energy games over vectors of naturals. We generalise this by considering all valid updates. 
+We formalise this in this theory as an \<open>energy_game\<close> with a fixed dimension.  \<close>
 
 locale bispings_energy_game = energy_game attacker weight apply_update 
   for attacker ::  "'position set" and 
