@@ -474,7 +474,7 @@ next
 qed
 
 lemma iteration_scott_continuous_vanilla:
-  assumes "finite positions" and "P \<subseteq> possible_pareto" and 
+  assumes "P \<subseteq> possible_pareto" and 
           "\<And>F F'. F \<in> P \<Longrightarrow> F' \<in> P \<Longrightarrow> \<exists>F''. F'' \<in> P \<and> F \<preceq> F'' \<and> F' \<preceq> F''" and "P \<noteq> {}"
   shows "iteration (pareto_sup P) = pareto_sup {iteration F | F. F \<in> P}"
 proof(rule antisymmetry)
@@ -487,7 +487,7 @@ proof(rule antisymmetry)
     assume "F \<in> {iteration F |F. F \<in> P}"
     from this obtain F' where "F = iteration F'" and "F' \<in> P" by auto
     thus "F \<in> possible_pareto" using iteration_pareto_functor
-      using assms(2) by auto 
+      using assms by auto 
   qed
   thus "pareto_sup {iteration F |F. F \<in> P} \<in> possible_pareto" using pareto_sup_is_sup by simp
 
@@ -545,7 +545,7 @@ proof(rule antisymmetry)
             show "{F_index g' |g'. weight g g' \<noteq> None} \<subseteq> P"
               using Fg
               using subsetI by auto 
-            have "finite {g'. weight g g' \<noteq> None}" using assms
+            have "finite {g'. weight g g' \<noteq> None}" using finite_positions
               by (metis Collect_mono finite_subset)
             thus "finite {F_index g' | g'. weight g g' \<noteq> None}" by auto
             show "P \<subseteq> possible_pareto" using assms by simp
@@ -594,7 +594,7 @@ proof(rule antisymmetry)
                   using \<open>a=inv_upd (the (weight g g')) (e_index' g')\<close> \<open>(e_index' g') e\<le> (e_index' g')\<close> inverse_monotonic valid_updates \<open>weight g g' \<noteq> None\<close>
                   by blast
                 thus "\<exists>b\<in>{inv_upd (the (weight g g')) (e_index g') |g'. weight g g' \<noteq> None}. a e\<le> b"
-                  by (smt (verit, best) F \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> e_index g' \<in> pareto_sup P g'\<close> \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> e_index' g' \<in> F g' \<and> e_index' g' e\<le> e_index g'\<close> \<open>pareto_sup P \<in> possible_pareto\<close> \<open>weight g g' \<noteq> None\<close> assms(2) energy_leq.strict_trans1 mem_Collect_eq pareto_order_def pareto_sup_is_sup(2) possible_pareto_def)                
+                  by (smt (verit, best) F \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> e_index g' \<in> pareto_sup P g'\<close> \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> e_index' g' \<in> F g' \<and> e_index' g' e\<le> e_index g'\<close> \<open>pareto_sup P \<in> possible_pareto\<close> \<open>weight g g' \<noteq> None\<close> assms energy_leq.strict_trans1 mem_Collect_eq pareto_order_def pareto_sup_is_sup(2) possible_pareto_def)                
               qed
               show "\<And>a. a \<in> {inv_upd (the (weight g g')) (e_index' g') |g'. weight g g' \<noteq> None} \<Longrightarrow>
                     length a = dimension"
@@ -650,7 +650,7 @@ proof(rule antisymmetry)
       assume "F \<in> {iteration F |F. F \<in> P}"
       from this obtain F' where "F = iteration F'" and "F' \<in> P" by auto
       hence "F' \<preceq> pareto_sup P" using pareto_sup_is_sup
-        by (simp add: assms(2))
+        by (simp add: assms)
       thus "F \<preceq> iteration (pareto_sup P)" using \<open>F = iteration F'\<close> iteration_monotonic assms
         by (simp add: \<open>F' \<in> P\<close> \<open>pareto_sup P \<in> possible_pareto\<close> subsetD) 
     qed
@@ -658,7 +658,6 @@ proof(rule antisymmetry)
 qed
 
 lemma iteration_scott_continuous: 
-  assumes "finite positions"
   shows "scott_continuous possible_pareto (\<preceq>) possible_pareto (\<preceq>) iteration"
 proof
   show "iteration ` possible_pareto \<subseteq> possible_pareto"
@@ -681,7 +680,7 @@ proof
       by (metis A1 directedD2) 
 
     hence "iteration s = pareto_sup {iteration F |F. F \<in> P}" 
-      using iteration_scott_continuous_vanilla A2 A3 A4 assms
+      using iteration_scott_continuous_vanilla A2 A3 A4 finite_positions
       by blast 
 
     show "extreme_bound possible_pareto (\<preceq>) (iteration ` P) (iteration s)"
@@ -707,8 +706,7 @@ text\<open>We now show that \<open>a_win_min\<close> is a fixed point of \<open>
 
 lemma a_win_min_is_fp:
   shows "iteration a_win_min = a_win_min"
-proof
-  
+proof  
   have  minimal_winning_budget_attacker: "\<And>g e. g \<in> attacker \<Longrightarrow> minimal_winning_budget e g = (e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (apply_inv_update (the (weight g g')) e'))})"
   proof-
     fix g e 
@@ -2533,7 +2531,6 @@ qed
 text\<open>We now conclude that the algorithm indeed returns the minimal attacker winning budgets.\<close>
 
 lemma a_win_min_is_lfp_sup:
-  assumes "nonpos_winning_budget = winning_budget"
   shows "pareto_sup {(iteration ^^ i) (\<lambda>g. {}) |. i} = a_win_min"
 proof(rule antisymmetry)
 
@@ -2711,7 +2708,7 @@ proof(rule antisymmetry)
                   by blast 
                 have "finite {g'. weight g g' \<noteq> None}" using finite_positions
                   by (smt (verit) Collect_cong finite_Collect_conjI) 
-                thus "finite P'" unfolding P'_def using assms
+                thus "finite P'" unfolding P'_def using nonpos_eq_pos
                   by auto
                 show "{(iteration ^^ n) (\<lambda>g. {}) |. n} \<subseteq> possible_pareto" using in_pareto_leq by auto
               qed
@@ -3124,10 +3121,8 @@ qed
 text\<open>We now apply Kleene's fixed point theorem, showing that minimal attacker winning budgets are the least fixed point.\<close>
 
 lemma a_win_min_is_lfp:
-  assumes "nonpos_winning_budget = winning_budget"
   shows "extreme {s \<in> possible_pareto. (iteration s) = s} (\<succeq>) a_win_min"
 proof-
-
   have in_pareto_leq: "\<And>n. (iteration ^^ n) (\<lambda>g. {}) \<in> possible_pareto \<and> (iteration ^^ n) (\<lambda>g. {}) \<preceq> a_win_min"
   proof-
     fix n 
@@ -3160,9 +3155,9 @@ proof-
         by blast  
       hence "pareto_sup {(iteration ^^ n) (\<lambda>g. {}) |. n} \<preceq> b" 
         using pareto_sup_is_sup in_pareto_leq \<open>b \<in> possible_pareto\<close>
-        using assms finite_iterations a_win_min_is_lfp_sup by auto
+        using nonpos_eq_pos finite_iterations a_win_min_is_lfp_sup by auto
       thus "b \<succeq> a_win_min" 
-        using assms a_win_min_is_lfp_sup
+        using nonpos_eq_pos a_win_min_is_lfp_sup
         by simp 
     qed
     show "\<And>x. x \<in> {(iteration ^^ n) (\<lambda>g. {}) |. n} \<Longrightarrow> a_win_min \<succeq> x"
@@ -3178,7 +3173,7 @@ proof-
   qed
 
   thus "extreme {s \<in> possible_pareto. (iteration s) = s} (\<succeq>) a_win_min"
-    using kleene_lfp_iteration assms
+    using kleene_lfp_iteration nonpos_eq_pos
     by (smt (verit, best) Collect_cong antisymmetry iteration_pareto_functor reflexivity sympartp_def) 
 qed
 
