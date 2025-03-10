@@ -1,18 +1,20 @@
 section \<open>Decidability of Bisping's Declining Energy Games\<close>
 
 theory Decidability
-  imports Bispings_Energy_Game Complete_Non_Orders.Kleene_Fixed_Point
+  imports Galois_Energy_Game Complete_Non_Orders.Kleene_Fixed_Point
 begin
 
-text\<open>In this theory we give a proof of decidability for Bisping's declining energy games. 
+text\<open>In this theory we give a proof of decidability for Galois energy games (over vectors of naturals). 
 We do this by providing a proof of correctness of the simplifyed version of
 Bisping's Algorithm to calculate minimal attacker winning budgets. 
 We further formalise the key argument for its termination.
 \<close>
 
-locale bispings_energy_game_assms = bispings_energy_game attacker weight dimension
+locale galois_energy_game_assms = galois_energy_game attacker weight application inverse_application dimension
   for attacker ::  "'position set" and 
-      weight :: "'position \<Rightarrow> 'position \<Rightarrow> update option" and 
+      weight :: "'position \<Rightarrow> 'position \<Rightarrow> 'label option" and
+      application :: "'label \<Rightarrow> energy \<Rightarrow> energy option" and
+      inverse_application :: "'label \<Rightarrow> energy \<Rightarrow> energy option" and
       dimension :: "nat"
 +
 assumes nonpos_eq_pos: "nonpos_winning_budget = winning_budget" and
@@ -319,7 +321,7 @@ proof
             case True
             hence "e \<in> energy_Min {inv_upd (the (weight g g')) e' | e' g'. length e' = dimension \<and> weight g g' \<noteq> None \<and> e' \<in> F g'}"
               using \<open>e \<in> iteration F g\<close> iteration_def by auto 
-            then show ?thesis using assms energy_Min_def len_inv_appl valid_updates
+            then show ?thesis using assms energy_Min_def len_inv_appl
               by force
           next
             case False
@@ -359,7 +361,8 @@ proof
         hence "\<exists>e''. e'' \<in> F' g' \<and> e'' e\<le> e'" using pareto_order_def assms by simp
         from this obtain e'' where "e'' \<in> F' g' \<and> e'' e\<le> e'" by auto
         hence uE: "inv_upd (the (weight g g')) e'' e\<le>  inv_upd (the (weight g g')) e'" 
-          using E inverse_monotonic valid_updates by blast
+          using E inverse_monotonic domain_inv
+          using energy_leq_def by blast 
         hence "inv_upd (the (weight g g')) e'' \<in> {inv_upd (the (weight g g')) e' | e' g'. length e' = dimension \<and> weight g g' \<noteq> None \<and> e' \<in> F' g'}"
           using E iteration_def True \<open>e'' \<in> F' g' \<and> e'' e\<le> e'\<close>
           using energy_leq_def by blast
@@ -385,12 +388,13 @@ proof
           using \<open>\<And>g'.  weight g g' \<noteq> None \<Longrightarrow> \<exists>e'. e' \<in> F' g' \<and> e' e\<le> e_index g'\<close> some_eq_ex
           by (metis (mono_tags, lifting))
         hence "\<And>g'. weight g g' \<noteq> None \<Longrightarrow> inv_upd (the (weight g g')) (e_index' g') e\<le> inv_upd (the (weight g g')) (e_index g')"
-          using inverse_monotonic valid_updates
-          using \<open>\<forall>g'. weight g g' \<noteq> None \<longrightarrow> length (e_index g') = dimension \<and> e_index g' \<in> F g'\<close> by blast 
+          using inverse_monotonic 
+          using \<open>\<forall>g'. weight g g' \<noteq> None \<longrightarrow> length (e_index g') = dimension \<and> e_index g' \<in> F g'\<close>
+          by (simp add: domain_inv energy_leq_def)
         hence leq: "\<And>a. a\<in> {inv_upd (the (weight g g')) (e_index' g')| g'. weight g g' \<noteq> None} \<Longrightarrow> \<exists>b. b \<in> {inv_upd (the (weight g g')) (e_index g')| g'. weight g g' \<noteq> None} \<and> a e\<le> b"
           by blast
         have len: "\<And>a. a\<in> {inv_upd (the (weight g g')) (e_index' g')| g'. weight g g' \<noteq> None} \<Longrightarrow> length a = dimension"
-          using valid_updates E' E len_inv_appl
+          using  E' E len_inv_appl
           using \<open>\<forall>g'. weight g g' \<noteq> None \<longrightarrow> length (e_index g') = dimension \<and> e_index g' \<in> F g'\<close> energy_leq_def by force
         hence leq: "energy_sup dimension {inv_upd (the (weight g g')) (e_index' g')| g'. weight g g' \<noteq> None} e\<le> energy_sup dimension {inv_upd (the (weight g g')) (e_index g')| g'. weight g g' \<noteq> None}"
         proof(cases "{g'. weight g g' \<noteq> None} = {}")
@@ -591,8 +595,8 @@ proof(rule antisymmetry)
                   using \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> e_index' g'\<in> F g' \<and> e_index' g' e\<le> e_index g'\<close> possible_pareto_def \<open>weight g g' \<noteq> None\<close> F assms
                   by blast 
                 hence "a e\<le> inv_upd (the (weight g g')) (e_index' g')"
-                  using \<open>a=inv_upd (the (weight g g')) (e_index' g')\<close> \<open>(e_index' g') e\<le> (e_index' g')\<close> inverse_monotonic valid_updates \<open>weight g g' \<noteq> None\<close>
-                  by blast
+                  using \<open>a=inv_upd (the (weight g g')) (e_index' g')\<close> \<open>(e_index' g') e\<le> (e_index' g')\<close> inverse_monotonic  \<open>weight g g' \<noteq> None\<close>
+                  using energy_leq.refl by blast
                 thus "\<exists>b\<in>{inv_upd (the (weight g g')) (e_index g') |g'. weight g g' \<noteq> None}. a e\<le> b"
                   by (smt (verit, best) F \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> e_index g' \<in> pareto_sup P g'\<close> \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> e_index' g' \<in> F g' \<and> e_index' g' e\<le> e_index g'\<close> \<open>pareto_sup P \<in> possible_pareto\<close> \<open>weight g g' \<noteq> None\<close> assms energy_leq.strict_trans1 mem_Collect_eq pareto_order_def pareto_sup_is_sup(2) possible_pareto_def)                
               qed
@@ -606,7 +610,7 @@ proof(rule antisymmetry)
                   by simp
                 hence "length (e_index' g') = dimension" using \<open>F \<in> possible_pareto\<close> possible_pareto_def
                   by blast 
-                thus "length a = dimension" using \<open>a=inv_upd (the (weight g g')) (e_index' g')\<close> valid_updates len_inv_appl \<open>weight g g' \<noteq> None\<close> by blast
+                thus "length a = dimension" using \<open>a=inv_upd (the (weight g g')) (e_index' g')\<close>  len_inv_appl \<open>weight g g' \<noteq> None\<close> by blast
               qed
             qed
           qed
@@ -706,8 +710,9 @@ text\<open>We now show that \<open>a_win_min\<close> is a fixed point of \<open>
 
 lemma a_win_min_is_fp:
   shows "iteration a_win_min = a_win_min"
-proof  
-  have  minimal_winning_budget_attacker: "\<And>g e. g \<in> attacker \<Longrightarrow> minimal_winning_budget e g = (e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (apply_inv_update (the (weight g g')) e'))})"
+proof
+  
+  have  minimal_winning_budget_attacker: "\<And>g e. g \<in> attacker \<Longrightarrow> minimal_winning_budget e g = (e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (inverse_application (the (weight g g')) e'))})"
   proof-
     fix g e 
     assume "g \<in> attacker" \<open>g \<in> attacker\<close>
@@ -719,36 +724,36 @@ proof
       proof
         from A3 have "length e' = dimension" using winning_budget_len.simps
           by blast
-        show "length (the (apply_inv_update (the (weight g g')) e')) = dimension \<and> g \<in> attacker \<and>
+        show "length (the (inverse_application (the (weight g g')) e')) = dimension \<and> g \<in> attacker \<and>
            (\<exists>g'a. weight g g'a \<noteq> None \<and>
-           apply_update (the (weight g g'a)) (the (apply_inv_update (the (weight g g')) e')) \<noteq> None \<and>
-           winning_budget_len (the (apply_update (the (weight g g'a)) (the (apply_inv_update (the (weight g g')) e')))) g'a) "
+           application (the (weight g g'a)) (the (inverse_application (the (weight g g')) e')) \<noteq> None \<and>
+           winning_budget_len (the (application (the (weight g g'a)) (the (inverse_application (the (weight g g')) e')))) g'a) "
         proof
-          show "length (the (apply_inv_update (the (weight g g')) e')) = dimension" using \<open>length e' = dimension\<close> A2 valid_updates by simp
+          show "length (the (inverse_application (the (weight g g')) e')) = dimension" using \<open>length e' = dimension\<close> A2
+            by (simp add: len_inv_appl)
           show "g \<in> attacker \<and>
            (\<exists>g'a. weight g g'a \<noteq> None \<and>
-           apply_update (the (weight g g'a)) (the (apply_inv_update (the (weight g g')) e')) \<noteq> None \<and>
-           winning_budget_len (the (apply_update (the (weight g g'a)) (the (apply_inv_update (the (weight g g')) e')))) g'a) "
+           application (the (weight g g'a)) (the (inverse_application (the (weight g g')) e')) \<noteq> None \<and>
+           winning_budget_len (the (application (the (weight g g'a)) (the (inverse_application (the (weight g g')) e')))) g'a) "
           proof
             show "g \<in> attacker" using A1 .
             show "\<exists>g'a. weight g g'a \<noteq> None \<and>
-          apply_update (the (weight g g'a)) (the (apply_inv_update (the (weight g g')) e')) \<noteq> None \<and>
-          winning_budget_len (the (apply_update (the (weight g g'a)) (the (apply_inv_update (the (weight g g')) e')))) g'a"
+          application (the (weight g g'a)) (the (inverse_application (the (weight g g')) e')) \<noteq> None \<and>
+          winning_budget_len (the (application (the (weight g g'a)) (the (inverse_application (the (weight g g')) e')))) g'a"
             proof
               show "weight g g' \<noteq> None \<and>
-                apply_update (the (weight g g')) (the (apply_inv_update (the (weight g g')) e')) \<noteq> None \<and>
-                winning_budget_len (the (apply_update (the (weight g g')) (the (apply_inv_update (the (weight g g')) e')))) g'"
+                application (the (weight g g')) (the (inverse_application (the (weight g g')) e')) \<noteq> None \<and>
+                winning_budget_len (the (application (the (weight g g')) (the (inverse_application (the (weight g g')) e')))) g'"
               proof
                 show "weight g g' \<noteq> None" using A2 .
-                show "apply_update (the (weight g g')) (the (apply_inv_update (the (weight g g')) e')) \<noteq> None \<and>
-                    winning_budget_len (the (apply_update (the (weight g g')) (the (apply_inv_update (the (weight g g')) e')))) g'"
-                proof
-                  from A1 A2 have "length e' = length (the (weight g g'))" using valid_updates \<open>length e' = dimension\<close> by simp 
-                  thus "apply_update (the (weight g g')) (the (apply_inv_update (the (weight g g')) e')) \<noteq> None" using inv_not_none inv_not_none_then
-                    by metis
-                  have "energy_leq e' (the (apply_update (the (weight g g')) (the (apply_inv_update (the (weight g g')) e'))))" using leq_up_inv inv_not_none \<open>length e' = length (the (weight g g'))\<close>
-                    by (metis A2 valid_updates)
-                  thus "winning_budget_len (the (apply_update (the (weight g g')) (the (apply_inv_update (the (weight g g')) e')))) g'" using  upwards_closure_wb_len
+                show "application (the (weight g g')) (the (inverse_application (the (weight g g')) e')) \<noteq> None \<and>
+                    winning_budget_len (the (application (the (weight g g')) (the (inverse_application (the (weight g g')) e')))) g'"
+                proof 
+                  from A1 A2 show "application (the (weight g g')) (the (inverse_application (the (weight g g')) e')) \<noteq> None" using domain_inv
+                    by (simp add: \<open>length e' = dimension\<close>) 
+                  have "energy_leq e' (the (application (the (weight g g')) (the (inverse_application (the (weight g g')) e'))))" using leq_up_inv
+                    using A2 \<open>length e' = dimension\<close> by blast 
+                  thus "winning_budget_len (the (application (the (weight g g')) (the (inverse_application (the (weight g g')) e')))) g'" using  upwards_closure_wb_len
                     using A3 by auto 
                 qed
               qed
@@ -766,23 +771,24 @@ proof
       proof-
         from A1 A2 have "winning_budget_len e g" using energy_Min_def by simp
         hence \<open>length e = dimension\<close> using winning_budget_len.simps by blast
-        from A1 A2 \<open>winning_budget_len e g\<close> have " (\<exists>g'. (weight g g' \<noteq> None) \<and> (apply_update (the (weight g g')) e)\<noteq> None \<and> (winning_budget_len (the (apply_update (the (weight g g')) e)) g') )" 
+        from A1 A2 \<open>winning_budget_len e g\<close> have " (\<exists>g'. (weight g g' \<noteq> None) \<and> (application (the (weight g g')) e)\<noteq> None \<and> (winning_budget_len (the (application (the (weight g g')) e)) g') )" 
           using winning_budget_len.simps
           by blast 
-        from this obtain g' where G: "(weight g g' \<noteq> None) \<and> (apply_update (the (weight g g')) e)\<noteq> None \<and> (winning_budget_len (the (apply_update (the (weight g g')) e)) g')" by auto
-        hence "length (the (apply_update (the (weight g g')) e)) = dimension"
+        from this obtain g' where G: "(weight g g' \<noteq> None) \<and> (application (the (weight g g')) e)\<noteq> None \<and> (winning_budget_len (the (application (the (weight g g')) e)) g')" by auto
+        hence "length (the (application (the (weight g g')) e)) = dimension"
           using \<open>length e = dimension\<close> len_appl by blast 
-        hence W: "winning_budget_len (the (apply_inv_update (the (weight g g')) (the (apply_update (the (weight g g')) e)))) g" using G attacker_inv_in_winning_budget
+        hence W: "winning_budget_len (the (inverse_application (the (weight g g')) (the (application (the (weight g g')) e)))) g" using G attacker_inv_in_winning_budget
           by (meson A1)
-        have "energy_leq (the (apply_inv_update (the (weight g g')) (the (apply_update (the (weight g g')) e)))) e" using inv_up_leq
-          using G valid_updates by blast
-        hence E: "e = (the (apply_inv_update (the (weight g g')) (the (apply_update (the (weight g g')) e))))" using W A1 A2 energy_Min_def
+        have "energy_leq (the (inverse_application (the (weight g g')) (the (application (the (weight g g')) e)))) e" using inv_up_leq
+          using G
+          using \<open>length e = dimension\<close> by blast
+        hence E: "e = (the (inverse_application (the (weight g g')) (the (application (the (weight g g')) e))))" using W A1 A2 energy_Min_def
           by auto 
         show ?thesis 
         proof
-          show "\<exists>e'. weight g g' \<noteq> None \<and> winning_budget_len e' g' \<and> e = the (apply_inv_update (the (weight g g')) e') "
+          show "\<exists>e'. weight g g' \<noteq> None \<and> winning_budget_len e' g' \<and> e = the (inverse_application (the (weight g g')) e') "
           proof
-            show "weight g g' \<noteq> None \<and> winning_budget_len (the (apply_update (the (weight g g')) e)) g' \<and> e = the (apply_inv_update (the (weight g g')) (the (apply_update (the (weight g g')) e)))" 
+            show "weight g g' \<noteq> None \<and> winning_budget_len (the (application (the (weight g g')) e)) g' \<and> e = the (inverse_application (the (weight g g')) (the (application (the (weight g g')) e)))" 
               using G E by simp 
           qed
         qed
@@ -792,43 +798,41 @@ proof
     have min_winning_budget_a_iff_energy_Min: "minimal_winning_budget e g
     \<longleftrightarrow> e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g' \<and> e=(inv_upd (the (weight g g')) e')}"
     proof-
-      have len: "\<And>e. e\<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (apply_inv_update (the (weight g g')) e'))} \<Longrightarrow> length e = dimension"
+      have len: "\<And>e. e\<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (inverse_application (the (weight g g')) e'))} \<Longrightarrow> length e = dimension"
       proof-
         fix e
-        assume "e\<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (apply_inv_update (the (weight g g')) e'))}"
-        hence "\<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (apply_inv_update (the (weight g g')) e'))" by auto
-        from this obtain g' e' where eg: "weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (apply_inv_update (the (weight g g')) e'))" by auto
+        assume "e\<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (inverse_application (the (weight g g')) e'))}"
+        hence "\<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (inverse_application (the (weight g g')) e'))" by auto
+        from this obtain g' e' where eg: "weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (inverse_application (the (weight g g')) e'))" by auto
         hence "weight g g' \<noteq> None" by auto
-        hence "length (the (weight g g')) = dimension" using valid_updates by auto
         from eg have "length e' = dimension" using winning_budget_len.simps by blast 
-        hence "length (the (weight g g')) = length e'" using \<open>length (the (weight g g')) = dimension\<close> by auto
-        hence "length (the (apply_inv_update (the (weight g g')) e')) = length e'" using len_inv_appl by blast
-        thus "length e = dimension" using eg \<open>length e' = dimension\<close> by auto
+        thus "length e = dimension" using eg \<open>length e' = dimension\<close>
+          using len_inv_appl by blast
       qed
 
       show ?thesis 
       proof
         assume "minimal_winning_budget e g"
         hence A: "winning_budget_len e g \<and> (\<forall>e'. e' \<noteq> e \<longrightarrow> e' e\<le> e \<longrightarrow> \<not> winning_budget_len e' g)" using energy_Min_def by auto
-        hence E: "e\<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (apply_inv_update (the (weight g g')) e'))}" 
+        hence E: "e\<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (inverse_application (the (weight g g')) e'))}" 
           using min_winning_budget_is_inv_a \<open>g \<in> attacker\<close>
           by (simp add: \<open>minimal_winning_budget e g\<close>) 
 
-        have "\<And>x. x \<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (apply_inv_update (the (weight g g')) e'))} \<and> energy_leq x e \<Longrightarrow> e=x"
+        have "\<And>x. x \<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (inverse_application (the (weight g g')) e'))} \<and> energy_leq x e \<Longrightarrow> e=x"
         proof-
           fix x 
-          assume X: "x \<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g' \<and> e=(the (apply_inv_update (the (weight g g')) e'))} \<and> energy_leq x e"
+          assume X: "x \<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g' \<and> e=(the (inverse_application (the (weight g g')) e'))} \<and> energy_leq x e"
           have "winning_budget_len x g" 
           proof
             show "length x = dimension \<and>
               g \<in> attacker \<and>
               (\<exists>g'. weight g g' \<noteq> None \<and>
-            apply_update (the (weight g g')) x \<noteq> None \<and> winning_budget_len (the (apply_update (the (weight g g')) x)) g')"
+            application (the (weight g g')) x \<noteq> None \<and> winning_budget_len (the (application (the (weight g g')) x)) g')"
             proof
               show "length x = dimension" using len X by blast
               show "g \<in> attacker \<and>
                 (\<exists>g'. weight g g' \<noteq> None \<and>
-                apply_update (the (weight g g')) x \<noteq> None \<and> winning_budget_len (the (apply_update (the (weight g g')) x)) g')"                         
+                application (the (weight g g')) x \<noteq> None \<and> winning_budget_len (the (application (the (weight g g')) x)) g')"                         
               proof
                 show "g \<in> attacker" using \<open>g \<in> attacker\<close>.
 
@@ -850,7 +854,7 @@ proof
                     proof
 
                       have "e' e\<le> (upd (the (weight g g')) x)" 
-                        using X leq_up_inv valid_updates
+                        using X leq_up_inv 
                         by (metis winning_budget_len.simps)
                       have "winning_budget_len (inv_upd (the (weight g g')) e') g"
                         using X attacker_inv_in_winning_budget \<open>weight g g' \<noteq> None\<close> \<open>g \<in> attacker\<close>
@@ -858,11 +862,12 @@ proof
                       thus "winning_budget_len (upd (the (weight g g')) x) g'"
                         using \<open>e' e\<le> (upd (the (weight g g')) x)\<close> upwards_closure_wb_len X by blast
 
-                      have "apply_inv_update (the (weight g g')) e' \<noteq> None" 
-                        using inv_not_none valid_updates \<open>weight g g' \<noteq> None\<close>
+                      have "inverse_application (the (weight g g')) e' \<noteq> None" 
+                        using domain_inv  \<open>weight g g' \<noteq> None\<close>
                         by (metis X winning_budget_len.simps)
                       thus "apply_w g g' x \<noteq> None"
-                        using X inv_not_none_then by simp
+                        using X domain_inv
+                        using nonpos_eq_pos winning_bugget_len_is_wb by blast 
                     qed
                   qed
                 qed
@@ -872,12 +877,12 @@ proof
           thus "e=x" using X A 
             by metis 
         qed
-        thus "e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (apply_inv_update (the (weight g g')) e'))}"
+        thus "e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (inverse_application (the (weight g g')) e'))}"
           using E energy_Min_def
           by (smt (verit, del_insts) mem_Collect_eq) 
       next
-        assume "e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (apply_inv_update (the (weight g g')) e'))}"
-        hence E: "e \<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (apply_inv_update (the (weight g g')) e'))}"
+        assume "e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (inverse_application (the (weight g g')) e'))}"
+        hence E: "e \<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (inverse_application (the (weight g g')) e'))}"
           using energy_Min_def by auto
         have "winning_budget_len e g \<and> (\<forall>e'. e' \<noteq> e \<longrightarrow> energy_leq e' e \<longrightarrow> \<not> winning_budget_len e' g)"
         proof
@@ -920,11 +925,11 @@ proof
           hence E: "energy_leq e'' e \<and> winning_budget_len e'' g \<and> (\<forall>e' \<noteq> e''. energy_leq e' e'' \<longrightarrow> \<not> winning_budget_len e' g)" using X
             by meson 
           hence "energy_leq e'' e \<and> minimal_winning_budget e'' g" using energy_Min_def by auto
-          hence "\<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e''=(the (apply_inv_update (the (weight g g')) e'))" 
+          hence "\<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e''=(the (inverse_application (the (weight g g')) e'))" 
             using min_winning_budget_is_inv_a X \<open>g \<in> attacker\<close> by simp
-          hence "e'' \<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (apply_inv_update (the (weight g g')) e'))}" by auto
+          hence "e'' \<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (inverse_application (the (weight g g')) e'))}" by auto
           hence "e=e''" using \<open>g \<in> attacker\<close> X energy_Min_def E
-            by (smt (verit, best) \<open>e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g' \<and> e = the (apply_inv_update (the (weight g g')) e')}\<close> mem_Collect_eq)
+            by (smt (verit, best) \<open>e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g' \<and> e = the (inverse_application (the (weight g g')) e')}\<close> mem_Collect_eq)
           thus "(\<forall>e'. e' \<noteq> e \<longrightarrow> energy_leq e' e \<longrightarrow> \<not> winning_budget_len e' g)" using E by auto
         qed
         thus "minimal_winning_budget e g" using energy_Min_def by auto
@@ -940,9 +945,9 @@ proof
         from A1 A2 have "winning_budget_len e g" using energy_Min_def by simp
         from A1 A2 have "\<forall>e' \<noteq> e. energy_leq e' e \<longrightarrow> \<not> winning_budget_len e' g" using energy_Min_def
           using mem_Collect_eq by auto 
-        hence "\<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (apply_inv_update (the (weight g g')) e'))"
+        hence "\<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (inverse_application (the (weight g g')) e'))"
           using min_winning_budget_is_inv_a A1 A2 \<open>winning_budget_len e g\<close> by auto
-        from this obtain g' e' where G: "weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (apply_inv_update (the (weight g g')) e'))" by auto
+        from this obtain g' e' where G: "weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (inverse_application (the (weight g g')) e'))" by auto
         hence "e' \<in> {e. winning_budget_len e g' \<and> energy_leq e e'}" using energy_leq.refl by auto
         have "\<And>e'. e' \<in> {e. winning_budget_len e g' \<and> energy_leq e e'} \<Longrightarrow> length e' = dimension" using winning_budget_len.simps by blast
         hence "energy_Min {e. winning_budget_len e g' \<and> energy_leq e e'} \<noteq> {}" using \<open>e' \<in> {e. winning_budget_len e g' \<and> energy_leq e e'}\<close> energy_Min_not_empty
@@ -953,35 +958,35 @@ proof
           by (smt (verit, del_insts) energy_leq.strict_trans1 mem_Collect_eq) 
 
         have "energy_leq e'' e'" using \<open>e'' \<in> energy_Min {e. winning_budget_len e g' \<and> energy_leq e e'}\<close> energy_Min_def by auto
-        hence "energy_leq (the (apply_inv_update (the (weight g g')) e'')) (the (apply_inv_update (the (weight g g')) e'))" 
+        hence "energy_leq (the (inverse_application (the (weight g g')) e'')) (the (inverse_application (the (weight g g')) e'))" 
           using inverse_monotonic
-          by (metis G valid_updates winning_budget_len.simps)
-        hence "energy_leq (the (apply_inv_update (the (weight g g')) e'')) e" using G by auto
-        hence "e=(the (apply_inv_update (the (weight g g')) e''))" using \<open>minimal_winning_budget e'' g'\<close> \<open>\<forall>e' \<noteq> e. energy_leq e' e \<longrightarrow> \<not> winning_budget_len e' g\<close>
+          using G domain_inv energy_leq_def nonpos_eq_pos winning_bugget_len_is_wb by auto
+        hence "energy_leq (the (inverse_application (the (weight g g')) e'')) e" using G by auto
+        hence "e=(the (inverse_application (the (weight g g')) e''))" using \<open>minimal_winning_budget e'' g'\<close> \<open>\<forall>e' \<noteq> e. energy_leq e' e \<longrightarrow> \<not> winning_budget_len e' g\<close>
           by (metis (no_types, lifting) G A1 attacker_inv_in_winning_budget energy_Min_def mem_Collect_eq)
         thus ?thesis using G \<open>minimal_winning_budget e'' g'\<close> by auto
       qed
     qed
 
-    show "minimal_winning_budget e g = (e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (apply_inv_update (the (weight g g')) e'))})"
+    show "minimal_winning_budget e g = (e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (inverse_application (the (weight g g')) e'))})"
     proof
       assume "minimal_winning_budget e g"
-      show "(e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (apply_inv_update (the (weight g g')) e'))})"
+      show "(e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (inverse_application (the (weight g g')) e'))})"
       proof-
         from \<open>g \<in> attacker\<close> have exist: "\<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e = inv_upd (the (weight g g')) e'"
           using \<open>minimal_winning_budget e g\<close> min_winning_budget_is_minimal_inv_a by simp
-        have "\<And>e''. e'' e\<le> e \<and> e \<noteq> e'' \<Longrightarrow> e'' \<notin> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (apply_inv_update (the (weight g g')) e'))}"
+        have "\<And>e''. e'' e\<le> e \<and> e \<noteq> e'' \<Longrightarrow> e'' \<notin> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (inverse_application (the (weight g g')) e'))}"
         proof-
           fix e''
-          show "e'' e\<le> e \<and> e \<noteq> e'' \<Longrightarrow> e'' \<notin> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (apply_inv_update (the (weight g g')) e'))}"
+          show "e'' e\<le> e \<and> e \<noteq> e'' \<Longrightarrow> e'' \<notin> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (inverse_application (the (weight g g')) e'))}"
           proof-
             assume "e'' e\<le> e \<and> e \<noteq> e'' "
-            show "e'' \<notin> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (apply_inv_update (the (weight g g')) e'))}"
+            show "e'' \<notin> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (inverse_application (the (weight g g')) e'))}"
             proof
-              assume "e'' \<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (apply_inv_update (the (weight g g')) e'))}"
-              hence "\<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e''=(the (apply_inv_update (the (weight g g')) e'))"
+              assume "e'' \<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (inverse_application (the (weight g g')) e'))}"
+              hence "\<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e''=(the (inverse_application (the (weight g g')) e'))"
                 by auto
-              from this obtain g' e' where EG: "weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e''=(the (apply_inv_update (the (weight g g')) e'))" by auto
+              from this obtain g' e' where EG: "weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e''=(the (inverse_application (the (weight g g')) e'))" by auto
               hence "winning_budget_len e' g'" using energy_Min_def by simp
               hence "winning_budget_len e'' g" using EG winning_budget_len.simps
                 by (metis \<open>g \<in> attacker\<close> attacker_inv_in_winning_budget) 
@@ -989,16 +994,16 @@ proof
             qed
           qed
         qed
-        thus "(e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (apply_inv_update (the (weight g g')) e'))})" 
+        thus "(e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (inverse_application (the (weight g g')) e'))})" 
           using exist energy_Min_def
           by (smt (verit) mem_Collect_eq) 
       qed
     next
-      assume emin: "(e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (apply_inv_update (the (weight g g')) e'))})"
+      assume emin: "(e \<in> energy_Min {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g' \<and> e=(the (inverse_application (the (weight g g')) e'))})"
       show "minimal_winning_budget e g"
       proof-
-        from emin have "\<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g'  \<and> e=(the (apply_inv_update (the (weight g g')) e'))" using energy_Min_def by auto
-        hence  "\<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (apply_inv_update (the (weight g g')) e'))" using energy_Min_def
+        from emin have "\<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g'  \<and> e=(the (inverse_application (the (weight g g')) e'))" using energy_Min_def by auto
+        hence  "\<exists>g' e'. weight g g' \<noteq> None \<and> winning_budget_len e' g'  \<and> e=(the (inverse_application (the (weight g g')) e'))" using energy_Min_def
           by (metis (no_types, lifting) mem_Collect_eq)
         hence element_of: "e\<in>{e. \<exists>g' e'.
                    weight g g' \<noteq> None \<and>
@@ -1022,12 +1027,24 @@ proof
           hence "\<exists>e_min. minimal_winning_budget e_min g' \<and> e_min e\<le> e'" 
             using energy_Min_contains_smaller by meson
           from this obtain e_min where "minimal_winning_budget e_min g' \<and> e_min e\<le> e'" by auto
-          hence "inv_upd (the (weight g g')) e_min e\<le> inv_upd (the (weight g g')) e'" using inverse_monotonic
-            by (metis \<open>weight g g' \<noteq> None \<and> winning_budget_len e' g' \<and> e'' = inv_upd (the (weight g g')) e'\<close> bispings_energy_game.winning_budget_len.simps bispings_energy_game_axioms valid_updates)
+          have "inv_upd (the (weight g g')) e_min e\<le> inv_upd (the (weight g g')) e'" 
+          proof(rule inverse_monotonic)
+            show "weight g g' \<noteq> None"           
+              using \<open>weight g g' \<noteq> None \<and> winning_budget_len e' g' \<and> e'' = inv_upd (the (weight g g')) e'\<close> by simp
+            show "e_min e\<le> e'" using \<open>minimal_winning_budget e_min g' \<and> e_min e\<le> e'\<close>
+              by auto
+            hence "length e_min = dimension" using winning_budget_len.simps
+              by (metis E'G' energy_leq_def)
+            thus " inverse_application (the (weight g g')) e_min \<noteq> None"
+              using domain_inv \<open>weight g g' \<noteq> None\<close> by auto
+            show "length e_min = dimension"
+              by (simp add: \<open>length e_min = dimension\<close>) 
+          qed
           hence "inv_upd (the (weight g g')) e_min e< e" using \<open>e'' e< e\<close> E'G'
-            using energy_leq.trans by (metis energy_leq.asym) 
+            using energy_leq.trans
+            by (metis energy_leq.asym)
 
-          have "inv_upd (the (weight g g')) e_min \<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g'  \<and> e=(the (apply_inv_update (the (weight g g')) e'))}" 
+          have "inv_upd (the (weight g g')) e_min \<in> {e. \<exists>g' e'. weight g g' \<noteq> None \<and> minimal_winning_budget e' g'  \<and> e=(the (inverse_application (the (weight g g')) e'))}" 
             using \<open>minimal_winning_budget e_min g' \<and> e_min e\<le> e'\<close> E'G'
             by blast
           thus "False" using \<open>inv_upd (the (weight g g')) e_min e< e\<close> energy_Min_def emin
@@ -1046,7 +1063,7 @@ proof
   qed
 
 
-  have minimal_winning_budget_defender: "\<And>g e. g \<notin> attacker \<Longrightarrow> minimal_winning_budget e g = (e\<in> energy_Min {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+  have minimal_winning_budget_defender: "\<And>g e. g \<notin> attacker \<Longrightarrow> minimal_winning_budget e g = (e\<in> energy_Min {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})})"
   proof-
     fix g e
@@ -1060,43 +1077,45 @@ proof
       show "winning_budget_len (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None}) g"
       proof (rule winning_budget_len.intros(1))
         have "(\<forall>g'. weight g g' \<noteq> None \<longrightarrow>
-          apply_update (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}) \<noteq> None \<and>
-          winning_budget_len (the (apply_update (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}))) g') " 
+          application (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}) \<noteq> None \<and>
+          winning_budget_len (the (application (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}))) g') " 
         proof
           fix g'
           show "weight g g' \<noteq> None \<longrightarrow>
-          apply_update (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}) \<noteq> None \<and>
-          winning_budget_len (the (apply_update (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}))) g'"
+          application (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}) \<noteq> None \<and>
+          winning_budget_len (the (application (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}))) g'"
           proof
             assume "weight g g' \<noteq> None"
-            hence "strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. winning_budget_len e g' }" using A2 by simp
-            hence "\<exists>e. strat g' = the (apply_inv_update (the (weight g g')) e) \<and> winning_budget_len e g'" by blast
-            from this obtain e where E: "strat g' = the (apply_inv_update (the (weight g g')) e) \<and> winning_budget_len e g'" by auto
+            hence "strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. winning_budget_len e g' }" using A2 by simp
+            hence "\<exists>e. strat g' = the (inverse_application (the (weight g g')) e) \<and> winning_budget_len e g'" by blast
+            from this obtain e where E: "strat g' = the (inverse_application (the (weight g g')) e) \<and> winning_budget_len e g'" by auto
 
             hence "length e = dimension" using winning_budget_len.simps by blast
-            hence "apply_inv_update (the (weight g g')) e \<noteq> None" using inv_not_none valid_updates \<open>weight g g' \<noteq> None\<close> by simp
+            hence "inverse_application (the (weight g g')) e \<noteq> None" using domain_inv  \<open>weight g g' \<noteq> None\<close> by simp
 
             have leq: "energy_leq (strat g') (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None})" using energy_sup_in \<open>weight g g' \<noteq> None\<close>
-              by (metis (mono_tags, lifting) E \<open>length e = dimension\<close> len_inv_appl mem_Collect_eq valid_updates) 
+              by (metis (mono_tags, lifting) E \<open>length e = dimension\<close> len_inv_appl mem_Collect_eq ) 
 
-            show "apply_update (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}) \<noteq> None \<and>
-            winning_budget_len (the (apply_update (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}))) g'"
+            show "application (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}) \<noteq> None \<and>
+            winning_budget_len (the (application (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}))) g'"
             proof
-              have "apply_update (the (weight g g')) (strat g') = apply_update (the (weight g g')) (the (apply_inv_update (the (weight g g')) e))" using E
+              have "application (the (weight g g')) (strat g') = application (the (weight g g')) (the (inverse_application (the (weight g g')) e))" using E
                 by simp
-              also have "... \<noteq> None" using \<open>apply_inv_update (the (weight g g')) e \<noteq> None\<close> inv_not_none_then by simp
-              finally have "apply_update (the (weight g g')) (strat g') \<noteq> None" .
-              thus "apply_update (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}) \<noteq> None" 
-                using leq upd_domain_upward_closed by blast  
+              also have "... \<noteq> None" using \<open>inverse_application (the (weight g g')) e \<noteq> None\<close> domain_inv
+                using \<open>length e = dimension\<close> \<open>weight g g' \<noteq> None\<close> by presburger
+              finally have "application (the (weight g g')) (strat g') \<noteq> None" .
+              thus "application (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}) \<noteq> None" 
+                using leq domain_upw_closed
+                using \<open>weight g g' \<noteq> None\<close> by blast  
 
-              have "energy_leq e (the (apply_update (the (weight g g')) (strat g')))" using leq_up_inv valid_updates
-                by (metis \<open>apply_update (the (weight g g')) (strat g') = apply_update (the (weight g g')) (the (apply_inv_update (the (weight g g')) e))\<close> \<open>length e = dimension\<close> \<open>weight g g' \<noteq> None\<close>) 
-              hence W: "winning_budget_len (the (apply_update (the (weight g g')) (strat g'))) g'" using E upwards_closure_wb_len
+              have "energy_leq e (the (application (the (weight g g')) (strat g')))" using leq_up_inv 
+                by (metis \<open>application (the (weight g g')) (strat g') = application (the (weight g g')) (the (inverse_application (the (weight g g')) e))\<close> \<open>length e = dimension\<close> \<open>weight g g' \<noteq> None\<close>) 
+              hence W: "winning_budget_len (the (application (the (weight g g')) (strat g'))) g'" using E upwards_closure_wb_len
                 by blast
-              have "energy_leq (the (apply_update (the (weight g g')) (strat g'))) (the (apply_update (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None})))" 
-                using updates_monotonic valid_updates
-                by (smt (verit, del_insts) Collect_cong E \<open>apply_update (the (weight g g')) (strat g') \<noteq> None\<close> \<open>length e = dimension\<close> \<open>weight g g' \<noteq> None\<close> len_inv_appl leq)
-              thus "winning_budget_len (the (apply_update (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}))) g'" 
+              have "energy_leq (the (application (the (weight g g')) (strat g'))) (the (application (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None})))" 
+                using updates_monotonic 
+                by (smt (verit, del_insts) Collect_cong E \<open>application (the (weight g g')) (strat g') \<noteq> None\<close> \<open>length e = dimension\<close> \<open>weight g g' \<noteq> None\<close> len_inv_appl leq)
+              thus "winning_budget_len (the (application (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}))) g'" 
                 using W upwards_closure_wb_len by blast
             qed
           qed
@@ -1104,8 +1123,8 @@ proof
 
         thus "length (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}) = dimension \<and> g \<notin> attacker \<and>
           (\<forall>g'. weight g g' \<noteq> None \<longrightarrow>
-          apply_update (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}) \<noteq> None \<and>
-          winning_budget_len (the (apply_update (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}))) g') "
+          application (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}) \<noteq> None \<and>
+          winning_budget_len (the (application (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}))) g') "
           using A1 energy_sup_def
           by (simp add: Ex_list_of_length length_map map_nth)
       qed
@@ -1122,19 +1141,19 @@ proof
         from A2 have "length e =dimension" using winning_budget_len.simps energy_Min_def
           by (metis (no_types, lifting) mem_Collect_eq) 
         from A1 A2 have W: "(\<forall>g'. weight g g' \<noteq> None \<longrightarrow>
-                  apply_update (the (weight g g')) e \<noteq> None \<and>
-                  winning_budget_len (the (apply_update (the (weight g g')) e)) g')" using winning_budget_len.simps energy_Min_def
+                  application (the (weight g g')) e \<noteq> None \<and>
+                  winning_budget_len (the (application (the (weight g g')) e)) g')" using winning_budget_len.simps energy_Min_def
           by (metis (no_types, lifting) mem_Collect_eq) 
 
-        define strat where S: "\<forall>g'.  strat g' = the ((apply_inv_update (the (weight g g'))) (the (apply_update (the (weight g g')) e)))"
-        have A: "(\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) |e. winning_budget_len e g'})" 
+        define strat where S: "\<forall>g'.  strat g' = the ((inverse_application (the (weight g g'))) (the (application (the (weight g g')) e)))"
+        have A: "(\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) |e. winning_budget_len e g'})" 
         proof
           fix g'
-          show "weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) |e. winning_budget_len e g'}" 
+          show "weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) |e. winning_budget_len e g'}" 
           proof
             assume "weight g g' \<noteq> None"
-            hence "winning_budget_len (the (apply_update (the (weight g g')) e)) g'" using W by auto
-            thus "strat g' \<in> {the (apply_inv_update (the (weight g g')) e) |e. winning_budget_len e g'}" using S by blast
+            hence "winning_budget_len (the (application (the (weight g g')) e)) g'" using W by auto
+            thus "strat g' \<in> {the (inverse_application (the (weight g g')) e) |e. winning_budget_len e g'}" using S by blast
           qed
         qed
         hence W: "winning_budget_len (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}) g" using sup_inv_in_winning_budget A1 by simp
@@ -1142,14 +1161,12 @@ proof
         proof-
           fix g'
           assume "weight g g' \<noteq> None"
-          hence "apply_update (the (weight g g')) e \<noteq> None" using W
+          hence "application (the (weight g g')) e \<noteq> None" using W
             using A1 A2 winning_budget_len.cases energy_Min_def
-            by (metis (mono_tags, lifting) mem_Collect_eq)
-          have "(\<And>i A. (the (weight g g')) ! i = min_set A \<Longrightarrow> A\<noteq>{} \<and> A \<subseteq> {x. x < length e})" using \<open>weight g g' \<noteq> None\<close> \<open>g \<notin> attacker\<close> valid_updates \<open>length e =dimension\<close>
-            by metis 
-          from \<open>weight g g' \<noteq> None\<close> have "strat g' = the ((apply_inv_update (the (weight g g'))) (the (apply_update (the (weight g g')) e)))" using S by auto
-          thus "energy_leq (strat g') e" using inv_up_leq \<open>(\<And>i A. (the (weight g g')) ! i = min_set A \<Longrightarrow> A\<noteq>{} \<and> A \<subseteq> {x. x < length e})\<close> \<open>apply_update (the (weight g g')) e \<noteq> None\<close>
-            by (metis \<open>weight g g' \<noteq> None\<close> valid_updates)
+            by (metis (mono_tags, lifting) mem_Collect_eq) 
+          from \<open>weight g g' \<noteq> None\<close> have "strat g' = the ((inverse_application (the (weight g g'))) (the (application (the (weight g g')) e)))" using S by auto
+          thus "energy_leq (strat g') e" using inv_up_leq  \<open>application (the (weight g g')) e \<noteq> None\<close>
+            using \<open>length e = dimension\<close> \<open>weight g g' \<noteq> None\<close> by presburger
         qed
         hence "energy_leq (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}) e" using energy_sup_leq \<open>length e =dimension\<close>
           by (smt (verit) mem_Collect_eq) 
@@ -1186,7 +1203,7 @@ proof
                       e'' = energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}}) =
            minimal_winning_budget e g"
         proof
-          assume assumption: "e\<in> energy_Min {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. winning_budget_len e g'})
+          assume assumption: "e\<in> energy_Min {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. winning_budget_len e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}"
           show "minimal_winning_budget e g" 
             unfolding energy_Min_def 
@@ -1195,7 +1212,7 @@ proof
             proof
               show "e \<in> {e. winning_budget_len e g}" 
               proof
-                from A1 A2 assumption have "\<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. winning_budget_len e g'})
+                from A1 A2 assumption have "\<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. winning_budget_len e g'})
                   \<and> e = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})" 
                   using energy_Min_def by simp
                 thus "winning_budget_len e g" using sup_inv_in_winning_budget A1 A2 by blast
@@ -1236,7 +1253,7 @@ proof
                 by meson
               hence E: "energy_leq e'' e \<and> minimal_winning_budget e'' g" using energy_Min_def
                 by (smt (verit) mem_Collect_eq) 
-              hence "\<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. winning_budget_len e g'})
+              hence "\<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. winning_budget_len e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})" 
                 using min_winning_budget_is_inv_d 
                 by (simp add: X A1) 
@@ -1247,7 +1264,7 @@ proof
           qed
         next
           assume assumption: "minimal_winning_budget e g" 
-          show "e\<in> energy_Min {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. winning_budget_len e g'})
+          show "e\<in> energy_Min {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. winning_budget_len e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}"
             unfolding energy_Min_def 
           proof
@@ -1256,23 +1273,23 @@ proof
             show "e \<in> {e''.
           \<exists>strat.
              (\<forall>g'. weight g g' \<noteq> None \<longrightarrow>
-                   strat g' \<in> {the (apply_inv_update (the (weight g g')) e) |e. winning_budget_len e g'}) \<and>
+                   strat g' \<in> {the (inverse_application (the (weight g g')) e) |e. winning_budget_len e g'}) \<and>
              e'' = energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}} \<and>
           (\<forall>e'\<in>{e''.
            \<exists>strat.
               (\<forall>g'. weight g g' \<noteq> None \<longrightarrow>
-                    strat g' \<in> {the (apply_inv_update (the (weight g g')) e) |e. winning_budget_len e g'}) \<and>
+                    strat g' \<in> {the (inverse_application (the (weight g g')) e) |e. winning_budget_len e g'}) \<and>
               e'' = energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}}.
           e \<noteq> e' \<longrightarrow> \<not> energy_leq e' e)"
             proof
-              from A1 A2 assumption have "\<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. winning_budget_len e g'})
+              from A1 A2 assumption have "\<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. winning_budget_len e g'})
                   \<and> e = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})" using min_winning_budget_is_inv_d by simp
-              thus "e \<in> {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. winning_budget_len e g'})
+              thus "e \<in> {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. winning_budget_len e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}" by auto
               show " \<forall>e'\<in>{e''.
           \<exists>strat.
              (\<forall>g'. weight g g' \<noteq> None \<longrightarrow>
-                   strat g' \<in> {the (apply_inv_update (the (weight g g')) e) |e. winning_budget_len e g'}) \<and>
+                   strat g' \<in> {the (inverse_application (the (weight g g')) e) |e. winning_budget_len e g'}) \<and>
              e'' = energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}}.
        e \<noteq> e' \<longrightarrow> \<not> energy_leq e' e"
               proof
@@ -1280,14 +1297,14 @@ proof
                 assume "e' \<in> {e''.
                 \<exists>strat.
                    (\<forall>g'. weight g g' \<noteq> None \<longrightarrow>
-                         strat g' \<in> {the (apply_inv_update (the (weight g g')) e) |e. winning_budget_len e g'}) \<and>
+                         strat g' \<in> {the (inverse_application (the (weight g g')) e) |e. winning_budget_len e g'}) \<and>
                    e'' = energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}}"
                 hence "\<exists>strat.
                    (\<forall>g'. weight g g' \<noteq> None \<longrightarrow>
-                         strat g' \<in> {the (apply_inv_update (the (weight g g')) e) |e. winning_budget_len e g'}) \<and>
+                         strat g' \<in> {the (inverse_application (the (weight g g')) e) |e. winning_budget_len e g'}) \<and>
                    e' = energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}" by auto
                 from this obtain strat where S: "(\<forall>g'. weight g g' \<noteq> None \<longrightarrow>
-                         strat g' \<in> {the (apply_inv_update (the (weight g g')) e) |e. winning_budget_len e g'}) \<and>
+                         strat g' \<in> {the (inverse_application (the (weight g g')) e) |e. winning_budget_len e g'}) \<and>
                    e' = energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}" by auto
                 hence "length e'  = dimension" using energy_sup_def 
                   by (simp add: length_map) 
@@ -1295,33 +1312,34 @@ proof
                 proof
                   assume "e \<noteq> e'"
                   have "(\<forall>g'. weight g g' \<noteq> None \<longrightarrow>
-            apply_update (the (weight g g')) e' \<noteq> None \<and>
-            winning_budget_len (the (apply_update (the (weight g g')) e')) g')" 
+            application (the (weight g g')) e' \<noteq> None \<and>
+            winning_budget_len (the (application (the (weight g g')) e')) g')" 
                   proof
                     fix g'
                     show "weight g g' \<noteq> None \<longrightarrow>
-              apply_update (the (weight g g')) e' \<noteq> None \<and> winning_budget_len (the (apply_update (the (weight g g')) e')) g' "
+              application (the (weight g g')) e' \<noteq> None \<and> winning_budget_len (the (application (the (weight g g')) e')) g' "
                     proof
                       assume "weight g g' \<noteq> None"
-                      hence "strat g' \<in> {the (apply_inv_update (the (weight g g')) e) |e. winning_budget_len e g'}" using S by auto
-                      hence "\<exists>e''. strat g'= the (apply_inv_update (the (weight g g')) e'') \<and> winning_budget_len e'' g'" by auto
-                      from this obtain e'' where E: "strat g'= the (apply_inv_update (the (weight g g')) e'') \<and> winning_budget_len e'' g'" by auto
+                      hence "strat g' \<in> {the (inverse_application (the (weight g g')) e) |e. winning_budget_len e g'}" using S by auto
+                      hence "\<exists>e''. strat g'= the (inverse_application (the (weight g g')) e'') \<and> winning_budget_len e'' g'" by auto
+                      from this obtain e'' where E: "strat g'= the (inverse_application (the (weight g g')) e'') \<and> winning_budget_len e'' g'" by auto
                       hence "length e''=dimension" using winning_budget_len.simps by blast
-                      show "apply_update (the (weight g g')) e' \<noteq> None \<and> winning_budget_len (the (apply_update (the (weight g g')) e')) g' "
+                      show "application (the (weight g g')) e' \<noteq> None \<and> winning_budget_len (the (application (the (weight g g')) e')) g' "
                       proof
-                        have "energy_leq (strat g') e'" using S energy_sup_in \<open>weight g g' \<noteq> None\<close> valid_updates
+                        have "energy_leq (strat g') e'" using S energy_sup_in \<open>weight g g' \<noteq> None\<close> 
                           by (smt (verit) E \<open>length e'' = dimension\<close> len_inv_appl mem_Collect_eq)
-                        have "apply_update (the (weight g g')) (strat g') \<noteq> None" using E inv_not_none inv_not_none_then \<open>length e''=dimension\<close>
-                          by (metis \<open>weight g g' \<noteq> None\<close> valid_updates)
-                        thus "apply_update (the (weight g g')) e' \<noteq> None" using upd_domain_upward_closed \<open>energy_leq (strat g') e'\<close> by blast
-                        have "energy_leq e'' (the (apply_update (the (weight g g')) (strat g')))" using E leq_up_inv
-                          using \<open>length e'' = dimension\<close> \<open>weight g g' \<noteq> None\<close> valid_updates by metis
-                        hence W: "winning_budget_len (the (apply_update (the (weight g g')) (strat g'))) g'" using upwards_closure_wb_len
+                        have "application (the (weight g g')) (strat g') \<noteq> None" using E domain_inv domain_inv \<open>length e''=dimension\<close>
+                          by (metis \<open>weight g g' \<noteq> None\<close> )
+                        thus "application (the (weight g g')) e' \<noteq> None" using domain_upw_closed \<open>energy_leq (strat g') e'\<close>
+                          using \<open>weight g g' \<noteq> None\<close> by blast
+                        have "energy_leq e'' (the (application (the (weight g g')) (strat g')))" using E leq_up_inv
+                          using \<open>length e'' = dimension\<close> \<open>weight g g' \<noteq> None\<close>  by metis
+                        hence W: "winning_budget_len (the (application (the (weight g g')) (strat g'))) g'" using upwards_closure_wb_len
                           using E by blast
-                        from \<open>energy_leq (strat g') e'\<close> have "energy_leq (the (apply_update (the (weight g g')) (strat g')))  (the (apply_update (the (weight g g')) e'))" 
-                          using updates_monotonic valid_updates \<open>apply_update (the (weight g g')) (strat g') \<noteq> None\<close>
+                        from \<open>energy_leq (strat g') e'\<close> have "energy_leq (the (application (the (weight g g')) (strat g')))  (the (application (the (weight g g')) e'))" 
+                          using updates_monotonic  \<open>application (the (weight g g')) (strat g') \<noteq> None\<close>
                           by (smt (verit) Collect_cong E \<open>length e'' = dimension\<close> \<open>weight g g' \<noteq> None\<close> len_inv_appl)
-                        thus "winning_budget_len (the (apply_update (the (weight g g')) e')) g' " using upwards_closure_wb_len W
+                        thus "winning_budget_len (the (application (the (weight g g')) e')) g' " using upwards_closure_wb_len W
                           by blast 
                       qed
                     qed
@@ -1337,37 +1355,37 @@ proof
       qed
     qed
 
-    have  min_winning_budget_is_minimal_inv_d: "\<And>e g. g\<notin>attacker \<Longrightarrow> minimal_winning_budget e g \<Longrightarrow> \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+    have  min_winning_budget_is_minimal_inv_d: "\<And>e g. g\<notin>attacker \<Longrightarrow> minimal_winning_budget e g \<Longrightarrow> \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})"
     proof-
       fix e g
       assume A1: "g\<notin>attacker" and A2: "minimal_winning_budget e g" 
-      show "\<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+      show "\<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})"
       proof-
         from A1 A2 have "winning_budget_len e g" using energy_Min_def by simp
         from A1 A2 have "\<forall>e' \<noteq> e. energy_leq e' e \<longrightarrow> \<not> winning_budget_len e' g" using energy_Min_def
           using mem_Collect_eq by auto 
 
-        hence "e\<in> energy_Min {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. winning_budget_len e g'})
+        hence "e\<in> energy_Min {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. winning_budget_len e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}" 
           using \<open>winning_budget_len e g\<close> A1 A2 min_winning_budget_d_iff_energy_Min
           by (meson winning_budget_len.cases)
-        hence " \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. winning_budget_len e g'})
+        hence " \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. winning_budget_len e g'})
                   \<and> e = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})" using energy_Min_def by auto
 
-        from this obtain strat where Strat: "(\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. winning_budget_len e g'})
+        from this obtain strat where Strat: "(\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. winning_budget_len e g'})
                   \<and> e = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})" by auto
-        define strat_e where "strat_e \<equiv> \<lambda>g'.(SOME e. strat g' = the (apply_inv_update (the (weight g g')) e) \<and> winning_budget_len e g')"
+        define strat_e where "strat_e \<equiv> \<lambda>g'.(SOME e. strat g' = the (inverse_application (the (weight g g')) e) \<and> winning_budget_len e g')"
   
-        have Strat_E: "\<And>g'. weight g g' \<noteq> None \<Longrightarrow> strat g' = the (apply_inv_update (the (weight g g')) (strat_e g')) \<and> winning_budget_len (strat_e g') g'"
+        have Strat_E: "\<And>g'. weight g g' \<noteq> None \<Longrightarrow> strat g' = the (inverse_application (the (weight g g')) (strat_e g')) \<and> winning_budget_len (strat_e g') g'"
         proof-
           fix g'
-          have Strat_E: "strat_e g' = (SOME e. strat g' = the (apply_inv_update (the (weight g g')) e) \<and> winning_budget_len e g')" using strat_e_def by simp 
+          have Strat_E: "strat_e g' = (SOME e. strat g' = the (inverse_application (the (weight g g')) e) \<and> winning_budget_len e g')" using strat_e_def by simp 
           assume "weight g g' \<noteq> None"
-          hence "strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. winning_budget_len e g'}" using Strat by simp
-          hence "\<exists>e. strat g' = the (apply_inv_update (the (weight g g')) e) \<and> winning_budget_len e g'" by auto
-          thus "strat g' = the (apply_inv_update (the (weight g g')) (strat_e g')) \<and> winning_budget_len (strat_e g') g'" 
+          hence "strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. winning_budget_len e g'}" using Strat by simp
+          hence "\<exists>e. strat g' = the (inverse_application (the (weight g g')) e) \<and> winning_budget_len e g'" by auto
+          thus "strat g' = the (inverse_application (the (weight g g')) (strat_e g')) \<and> winning_budget_len (strat_e g') g'" 
             using Strat_E by (smt (verit, del_insts) some_eq_ex) 
         qed
 
@@ -1384,32 +1402,32 @@ proof
           thus "\<exists>e. e\<in> energy_Min {e. winning_budget_len e g' \<and> energy_leq e (strat_e g')}" by auto
         qed
 
-        define strat' where "strat' \<equiv> \<lambda>g'. the (apply_inv_update (the (weight g g')) (SOME e. e\<in> energy_Min {e. winning_budget_len e g' \<and> energy_leq e (strat_e g')}))"
+        define strat' where "strat' \<equiv> \<lambda>g'. the (inverse_application (the (weight g g')) (SOME e. e\<in> energy_Min {e. winning_budget_len e g' \<and> energy_leq e (strat_e g')}))"
  
-        have "(\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat' g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+        have "(\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat' g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e = (energy_sup dimension {strat' g'| g'. weight g g' \<noteq> None})"
         proof
-          show win: "\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat' g' \<in> {the (apply_inv_update (the (weight g g')) e) |e. minimal_winning_budget e g'}"
+          show win: "\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat' g' \<in> {the (inverse_application (the (weight g g')) e) |e. minimal_winning_budget e g'}"
           proof
             fix g'
-            show "weight g g' \<noteq> None \<longrightarrow> strat' g' \<in> {the (apply_inv_update (the (weight g g')) e) |e. minimal_winning_budget e g'}"
+            show "weight g g' \<noteq> None \<longrightarrow> strat' g' \<in> {the (inverse_application (the (weight g g')) e) |e. minimal_winning_budget e g'}"
             proof
               assume "weight g g' \<noteq> None"
-              hence "strat' g' = the (apply_inv_update (the (weight g g')) (SOME e. e\<in> energy_Min {e. winning_budget_len e g' \<and> energy_leq e (strat_e g')}))"
+              hence "strat' g' = the (inverse_application (the (weight g g')) (SOME e. e\<in> energy_Min {e. winning_budget_len e g' \<and> energy_leq e (strat_e g')}))"
                 using strat'_def by auto
-              hence  "\<exists>e. e\<in> energy_Min {e. winning_budget_len e g' \<and> energy_leq e (strat_e g')} \<and> strat' g' = the (apply_inv_update (the (weight g g')) e)"
+              hence  "\<exists>e. e\<in> energy_Min {e. winning_budget_len e g' \<and> energy_leq e (strat_e g')} \<and> strat' g' = the (inverse_application (the (weight g g')) e)"
                 using exists \<open>weight g g' \<noteq> None\<close> some_eq_ex
                 by (metis (mono_tags)) 
-              from this obtain e where E: "e\<in> energy_Min {e. winning_budget_len e g' \<and> energy_leq e (strat_e g')} \<and> strat' g' = the (apply_inv_update (the (weight g g')) e)" by auto
+              from this obtain e where E: "e\<in> energy_Min {e. winning_budget_len e g' \<and> energy_leq e (strat_e g')} \<and> strat' g' = the (inverse_application (the (weight g g')) e)" by auto
               hence "minimal_winning_budget e g'" using energy_Min_def
                 by (smt (verit) energy_leq.strict_trans1 mem_Collect_eq) 
-              thus "strat' g' \<in> {the (apply_inv_update (the (weight g g')) e) |e. minimal_winning_budget e g'}" using E
+              thus "strat' g' \<in> {the (inverse_application (the (weight g g')) e) |e. minimal_winning_budget e g'}" using E
                 by blast 
             qed
           qed
 
           have "(\<And>g'. weight g g' \<noteq> None \<Longrightarrow>
-           strat' g' \<in> {the (apply_inv_update (the (weight g g')) e) |e. winning_budget_len e g'})"
+           strat' g' \<in> {the (inverse_application (the (weight g g')) e) |e. winning_budget_len e g'})"
             using win energy_Min_def
             by (smt (verit, del_insts) mem_Collect_eq) 
           hence win: "winning_budget_len (energy_sup dimension {strat' g' |g'. weight g g' \<noteq> None}) g" 
@@ -1433,21 +1451,33 @@ proof
                 hence "\<exists>g'. a = strat' g' \<and> weight g g' \<noteq> None" by auto
                 from this obtain g' where "a = strat' g' \<and> weight g g' \<noteq> None" by auto
 
-                have "(strat' g') = (the (apply_inv_update (the (weight g g'))
+                have "(strat' g') = (the (inverse_application (the (weight g g'))
                   (SOME e. e \<in> energy_Min {e. winning_budget_len e g' \<and> energy_leq e (strat_e g')})))" using strat'_def by auto
-                hence  "\<exists>e. e\<in> energy_Min {e. winning_budget_len e g' \<and> energy_leq e (strat_e g')} \<and> strat' g' = the (apply_inv_update (the (weight g g')) e)"
+                hence  "\<exists>e. e\<in> energy_Min {e. winning_budget_len e g' \<and> energy_leq e (strat_e g')} \<and> strat' g' = the (inverse_application (the (weight g g')) e)"
                   using exists \<open>a = strat' g' \<and> weight g g' \<noteq> None\<close> some_eq_ex
                   by (metis (mono_tags)) 
-                from this obtain e where E: "e\<in> energy_Min {e. winning_budget_len e g' \<and> energy_leq e (strat_e g')} \<and> strat' g' = the (apply_inv_update (the (weight g g')) e)" by auto
+                from this obtain e where E: "e\<in> energy_Min {e. winning_budget_len e g' \<and> energy_leq e (strat_e g')} \<and> strat' g' = the (inverse_application (the (weight g g')) e)" by auto
                 hence "energy_leq e (strat_e g')" using energy_Min_def by auto
 
                 hence "length a = dimension " using \<open>a = strat' g' \<and> weight g g' \<noteq> None\<close> energy_Min_def
-                  by (metis E Strat_E bispings_energy_game.winning_budget_len.cases bispings_energy_game_axioms energy_leq_def len_inv_appl valid_updates) 
+                  by (metis (no_types, lifting) E len_inv_appl mem_Collect_eq winning_budget_len.cases)
 
-                from \<open>energy_leq e (strat_e g')\<close> have leq: "energy_leq (the (apply_inv_update (the (weight g g')) e)) (the (apply_inv_update (the (weight g g')) (strat_e g')))" 
-                  using inverse_monotonic
-                  by (smt (verit) apply_inv_update.simps energy_leq.order_iff_strict energy_leq_def gr_implies_not0 len_inv_appl) 
-                have "the (apply_inv_update (the (weight g g')) (strat_e g')) = strat g'" using Strat_E \<open>a = strat' g' \<and> weight g g' \<noteq> None\<close> by auto
+                have leq: "energy_leq (the (inverse_application (the (weight g g')) e)) (the (inverse_application (the (weight g g')) (strat_e g')))" 
+                proof(rule inverse_monotonic)
+                  show "energy_leq e (strat_e g')" using \<open>energy_leq e (strat_e g')\<close>.
+                  show "weight g g' \<noteq> None" using \<open>a = strat' g' \<and> weight g g' \<noteq> None\<close> by simp
+                  from E have "e\<in> {e. winning_budget_len e g' \<and> energy_leq e (strat_e g')}" using energy_Min_def
+                    by auto 
+                  hence "winning_budget_len e g'"
+                    by simp 
+                  thus "length e = dimension"
+                    using winning_budget_len.simps
+                    by blast 
+                  thus "inverse_application (the (weight g g')) e \<noteq> None"
+                    using domain_inv \<open>weight g g' \<noteq> None\<close>
+                    by simp
+                qed
+                have "the (inverse_application (the (weight g g')) (strat_e g')) = strat g'" using Strat_E \<open>a = strat' g' \<and> weight g g' \<noteq> None\<close> by auto
                 hence "energy_leq (strat' g') (strat g')" using leq E by simp
                 hence "\<exists>b\<in>{strat g' |g'. weight g g' \<noteq> None}. energy_leq a b" using \<open>a = strat' g' \<and> weight g g' \<noteq> None\<close> by auto
                 thus "\<exists>b\<in>{strat g' |g'. weight g g' \<noteq> None}. energy_leq a b \<and> length a = dimension" using \<open>length a = dimension\<close> by simp
@@ -1473,25 +1503,25 @@ proof
                       e'' = energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}})"
     proof
       assume "minimal_winning_budget e g"
-      hence exist: "\<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+      hence exist: "\<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e= (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})" 
         using min_winning_budget_is_minimal_inv_d \<open>g \<notin> attacker\<close> by simp
-      have "\<And>e''. e'' e< e \<Longrightarrow> \<not> e'' \<in> {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+      have "\<And>e''. e'' e< e \<Longrightarrow> \<not> e'' \<in> {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}"
       proof-
         fix e''
-        show "e'' e< e \<Longrightarrow> \<not> e'' \<in> {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+        show "e'' e< e \<Longrightarrow> \<not> e'' \<in> {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}"
         proof-
           assume "e'' e< e"
-          show "\<not> e'' \<in> {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+          show "\<not> e'' \<in> {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}"
           proof
-            assume "e'' \<in> {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+            assume "e'' \<in> {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}"
-            hence " \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+            hence " \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})" by auto
-            from this obtain strat where E'': "(\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+            from this obtain strat where E'': "(\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})" by auto
             hence "\<And>g'. weight g g' \<noteq> None \<Longrightarrow>
            strat g' \<in> {inv_upd (the (weight g g')) e |e. winning_budget_len e g'}" using energy_Min_def
@@ -1502,16 +1532,16 @@ proof
           qed
         qed
       qed
-      thus "e\<in> energy_Min {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+      thus "e\<in> energy_Min {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}"
         using exist energy_Min_def by (smt (verit) mem_Collect_eq)
     next 
-      assume A: "(e\<in> energy_Min {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+      assume A: "(e\<in> energy_Min {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})})"
     
-      hence emin: "e\<in> energy_Min {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+      hence emin: "e\<in> energy_Min {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}" using A by simp
-      hence "\<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+      hence "\<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})" using energy_Min_def by auto
       hence "\<exists>strat.
                 (\<forall>g'. weight g g' \<noteq> None \<longrightarrow>
@@ -1590,7 +1620,7 @@ proof
             by blast 
           have "a=inv_upd (the (weight g g')) x" using X \<open>a= strat' g' \<and> weight g g' \<noteq> None\<close> by simp
           thus "length a = dimension" 
-            using \<open>length x = dimension\<close> len_inv_appl valid_updates \<open>a= strat' g' \<and> weight g g' \<noteq> None\<close> by simp
+            using \<open>length x = dimension\<close> len_inv_appl  \<open>a= strat' g' \<and> weight g g' \<noteq> None\<close> by simp
         qed
 
         show "False" 
@@ -1631,10 +1661,8 @@ proof
             from this obtain x where X: "strat' g' = inv_upd (the (weight g g')) x \<and>  minimal_winning_budget x g' \<and> x e\<le> the_e g'" by auto
             hence "length x = dimension" using winning_budget_len.simps energy_Min_def
               by (metis (mono_tags, lifting) mem_Collect_eq) 
-            hence "length (the (weight g g')) = length x" using valid_updates \<open>weight g g' \<noteq> None\<close>
-              by simp 
-            hence "length (the (weight g g')) = length (the_e g')" using X energy_leq_def by simp
-            hence "strat' g' e\<le>  inv_upd (the (weight g g')) (the_e g')" using inverse_monotonic X by simp
+            hence "strat' g' e\<le>  inv_upd (the (weight g g')) (the_e g')" using inverse_monotonic X
+              by (metis \<open>weight g g' \<noteq> None\<close> domain_inv)
 
             have "strat g' \<in> {inv_upd (the (weight g g')) e |e. winning_budget_len e g'}" using Strat \<open>weight g g' \<noteq> None\<close> by auto
             hence "\<exists>e. strat g' = inv_upd (the (weight g g')) e \<and> winning_budget_len e g'" by auto
@@ -1650,10 +1678,10 @@ proof
           hence le: "energy_sup dimension {strat' g' |g'. weight g g' \<noteq> None} e< e" using \<open>e' e< e\<close>
             using energy_leq.asym energy_leq.trans by blast
 
-          have "energy_sup dimension {strat' g' |g'. weight g g' \<noteq> None} \<in> {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+          have "energy_sup dimension {strat' g' |g'. weight g g' \<noteq> None} \<in> {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}" 
           proof-
-            have "(\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat' g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})"
+            have "(\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat' g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})"
             proof
               fix g'
               show "weight g g' \<noteq> None \<longrightarrow>
@@ -1672,7 +1700,7 @@ proof
                   by auto
               qed
             qed
-            hence "\<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+            hence "\<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> energy_sup dimension {strat' g' |g'. weight g g' \<noteq> None} = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})"
               by blast 
             then show ?thesis
@@ -1726,46 +1754,46 @@ proof
   next
     case False
     have "a_win_min g = {e. minimal_winning_budget e g}" by simp
-    hence minwin: "a_win_min g = energy_Min {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+    hence minwin: "a_win_min g = energy_Min {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}"
       using minimal_winning_budget_defender False by simp
-    hence "a_win_min g = energy_Min {energy_sup dimension {strat g'| g'. weight g g' \<noteq> None} | strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})}"
+    hence "a_win_min g = energy_Min {energy_sup dimension {strat g'| g'. weight g g' \<noteq> None} | strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})}"
       by (smt (z3) Collect_cong)
     have iteration: "energy_Min {energy_sup dimension {inv_upd (the (weight g g')) (e_index g') | g'. weight g g' \<noteq> None} |
            e_index. \<forall>g'. weight g g' \<noteq> None \<longrightarrow> (length (e_index g') = dimension \<and> e_index g' \<in> a_win_min g')} = iteration a_win_min g" 
       using iteration_def False by simp
     
-    have "{e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+    have "{e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}
         ={energy_sup dimension {inv_upd (the (weight g g')) (e_index g') | g'. weight g g' \<noteq> None} |
            e_index. \<forall>g'. weight g g' \<noteq> None \<longrightarrow> (length (e_index g') = dimension \<and> e_index g' \<in> a_win_min g')}"
     proof
-      show "{e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+      show "{e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}
             \<subseteq>{energy_sup dimension {inv_upd (the (weight g g')) (e_index g') | g'. weight g g' \<noteq> None} |
            e_index. \<forall>g'. weight g g' \<noteq> None \<longrightarrow>(length (e_index g') = dimension \<and> e_index g' \<in> a_win_min g')}"
       proof
         fix e 
-        assume "e \<in> {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+        assume "e \<in> {e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}"
-        hence "\<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+        hence "\<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})"
           by auto
-        from this obtain strat where S: "(\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+        from this obtain strat where S: "(\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})"
           by auto
-        define e_index where "e_index \<equiv> \<lambda>g'. (SOME e''. e'' \<in> a_win_min g' \<and> strat g' = the (apply_inv_update (the (weight g g')) e''))"
-        hence index: "\<And>g'. weight g g' \<noteq> None \<Longrightarrow> (e_index g') \<in> a_win_min g' \<and> strat g' = the (apply_inv_update (the (weight g g')) (e_index g'))"
+        define e_index where "e_index \<equiv> \<lambda>g'. (SOME e''. e'' \<in> a_win_min g' \<and> strat g' = the (inverse_application (the (weight g g')) e''))"
+        hence index: "\<And>g'. weight g g' \<noteq> None \<Longrightarrow> (e_index g') \<in> a_win_min g' \<and> strat g' = the (inverse_application (the (weight g g')) (e_index g'))"
         proof-
           fix g'
-          have I: "e_index g' = (SOME e''. e'' \<in> a_win_min g' \<and> strat g' = the (apply_inv_update (the (weight g g')) e''))"
+          have I: "e_index g' = (SOME e''. e'' \<in> a_win_min g' \<and> strat g' = the (inverse_application (the (weight g g')) e''))"
             using e_index_def by simp
           assume "weight g g' \<noteq> None"
-          hence "strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'}"
+          hence "strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'}"
             using S by simp
-          hence "strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. e \<in> a_win_min g'}" by simp
-          hence "\<exists>e''. e'' \<in> a_win_min g' \<and> strat g' = the (apply_inv_update (the (weight g g')) e'')" by auto
-          thus "(e_index g') \<in> a_win_min g' \<and> strat g' = the (apply_inv_update (the (weight g g')) (e_index g'))"
+          hence "strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. e \<in> a_win_min g'}" by simp
+          hence "\<exists>e''. e'' \<in> a_win_min g' \<and> strat g' = the (inverse_application (the (weight g g')) e'')" by auto
+          thus "(e_index g') \<in> a_win_min g' \<and> strat g' = the (inverse_application (the (weight g g')) (e_index g'))"
             unfolding e_index_def using some_eq_ex
             by (smt (verit, del_insts)) 
         qed
@@ -1792,7 +1820,7 @@ proof
       qed
       show "{energy_sup dimension {inv_upd (the (weight g g')) (e_index g') | g'. weight g g' \<noteq> None} |
            e_index. \<forall>g'. weight g g' \<noteq> None \<longrightarrow> (length (e_index g') = dimension \<and> e_index g' \<in> a_win_min g')}
-          \<subseteq>{e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+          \<subseteq>{e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}"
       proof
         fix e
@@ -1802,7 +1830,7 @@ proof
           by blast
         define strat where "strat \<equiv> \<lambda>g'. inv_upd (the (weight g g')) (e_index g')"
         
-        show "e \<in>{e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (apply_inv_update (the (weight g g')) e) | e. minimal_winning_budget e g'})
+        show "e \<in>{e''. \<exists>strat. (\<forall>g'. weight g g' \<noteq> None \<longrightarrow> strat g' \<in> {the (inverse_application (the (weight g g')) e) | e. minimal_winning_budget e g'})
                   \<and> e'' = (energy_sup dimension {strat g'| g'. weight g g' \<noteq> None})}"
         proof
           show "\<exists>strat.
@@ -1892,7 +1920,7 @@ proof-
                        e = inv_upd (the (weight g g')) e'))"
       from this obtain g' e' where "weight g g' \<noteq> None" and "(S e' g' \<and> length e' = dimension) \<and>
                        e = inv_upd (the (weight g g')) e'" by auto
-      thus "length e = dimension" using len_inv_appl valid_updates by simp
+      thus "length e = dimension" using len_inv_appl  by simp
     qed
   qed
 qed
@@ -1962,26 +1990,26 @@ proof-
                         unfolding E proof(rule energy_sup_in)
                         show "inv_upd (the (weight g g')) (index g')
                              \<in> {inv_upd (the (weight g g')) (index g') |g'. weight g g' \<noteq> None}" using \<open>weight g g' \<noteq> None\<close> by auto
-                        show "length (inv_upd (the (weight g g')) (index g')) = dimension" using len_inv_appl valid_updates \<open>weight g g' \<noteq> None\<close> \<open>S (index g') g' \<and> index g' \<in> a_win g'\<close> winning_budget_len.simps
+                        show "length (inv_upd (the (weight g g')) (index g')) = dimension" using len_inv_appl  \<open>weight g g' \<noteq> None\<close> \<open>S (index g') g' \<and> index g' \<in> a_win g'\<close> winning_budget_len.simps
                           by (metis mem_Collect_eq)
                       qed
 
                       show "apply_w g g' e \<noteq> None"
-                      proof(rule upd_domain_upward_closed)
+                      using \<open>weight g g' \<noteq> None\<close> proof(rule domain_upw_closed)
                         show "apply_w g g' (inv_upd (the (weight g g')) (index g')) \<noteq> None"
-                          using inv_not_none valid_updates \<open>weight g g' \<noteq> None\<close> \<open>S (index g') g' \<and> index g' \<in> a_win g'\<close> winning_budget_len.simps
-                          by (metis inv_not_none_then mem_Collect_eq) 
+                          using domain_inv  \<open>weight g g' \<noteq> None\<close> \<open>S (index g') g' \<and> index g' \<in> a_win g'\<close> winning_budget_len.simps
+                          by (metis domain_inv mem_Collect_eq) 
                         show "inv_upd (the (weight g g')) (index g') e\<le> e" using leq by simp
                       qed
                       
                       have "index g' e\<le> upd (the (weight g g')) e"
                       proof(rule energy_leq.trans) 
                         show "index g' e\<le> upd (the (weight g g')) (inv_upd (the (weight g g')) (index g'))"
-                          using leq_up_inv valid_updates \<open>S (index g') g' \<and> index g' \<in> a_win g'\<close> winning_budget_len.simps
+                          using leq_up_inv  \<open>S (index g') g' \<and> index g' \<in> a_win g'\<close> winning_budget_len.simps
                           by (metis \<open>weight g g' \<noteq> None\<close> mem_Collect_eq)
                         show "upd (the (weight g g')) (inv_upd (the (weight g g')) (index g')) e\<le>
-    upd (the (weight g g')) e" using leq updates_monotonic valid_updates \<open>weight g g' \<noteq> None\<close>
-                          by (metis \<open>S (index g') g' \<and> index g' \<in> a_win g'\<close> inv_not_none inv_not_none_then mem_Collect_eq winning_budget_len.cases) 
+    upd (the (weight g g')) e" using leq updates_monotonic  \<open>weight g g' \<noteq> None\<close>
+                          by (metis \<open>S (index g') g' \<and> index g' \<in> a_win g'\<close> domain_inv len_inv_appl length_S) 
                       qed
                       
                       thus "winning_budget_len (upd (the (weight g g')) e) g'"
@@ -2006,7 +2034,7 @@ proof-
                  (\<exists>e'. (S e' g' \<and> e' \<in> a_win g') \<and> e = inv_upd (the (weight g g')) e'))"
           from this obtain g' e' where "weight g g' \<noteq> None" and "(S e' g' \<and> e' \<in> a_win g') \<and> e = inv_upd (the (weight g g')) e'" by auto
           hence "e' e\<le> upd (the (weight g g')) e" 
-            using valid_updates updates_monotonic inv_not_none_then inv_not_none
+            using  updates_monotonic domain_inv domain_inv
             by (metis length_S leq_up_inv)
           show "winning_budget_len e g" 
           proof(rule winning_budget_len.intros(2))
@@ -2018,8 +2046,8 @@ proof-
               have"length e' = dimension" using \<open>(S e' g' \<and> e' \<in> a_win g') \<and> e = inv_upd (the (weight g g')) e'\<close> winning_budget_len.simps
                 by blast
               show "length e = dimension"
-                using \<open>(S e' g' \<and> e' \<in> a_win g') \<and> e = inv_upd (the (weight g g')) e'\<close> len_inv_appl valid_updates
-                by (simp add: \<open>length e' = dimension\<close> \<open>weight g g' \<noteq> None\<close>) 
+                using \<open>(S e' g' \<and> e' \<in> a_win g') \<and> e = inv_upd (the (weight g g')) e'\<close> len_inv_appl \<open>length e' = dimension\<close> \<open>weight g g' \<noteq> None\<close>
+                by blast               
               show "g \<in> attacker \<and>
     (\<exists>g'. weight g g' \<noteq> None \<and>
           apply_w g g' e \<noteq> None \<and> winning_budget_len (upd (the (weight g g')) e) g')"
@@ -2037,7 +2065,7 @@ proof-
                     proof
                       show "apply_w g g' e \<noteq> None"
                         using \<open>weight g g' \<noteq> None\<close> \<open>(S e' g' \<and> e' \<in> a_win g') \<and> e = inv_upd (the (weight g g')) e'\<close>
-                        \<open>e' e\<le> upd (the (weight g g')) e\<close> valid_updates updates_monotonic inv_not_none_then inv_not_none
+                        \<open>e' e\<le> upd (the (weight g g')) e\<close>  updates_monotonic domain_inv domain_inv
                         by (metis mem_Collect_eq winning_budget_len.cases)
                       show "winning_budget_len (upd (the (weight g g')) e) g'"
                         using \<open>e' e\<le> upd (the (weight g g')) e\<close> upwards_closure_wb_len \<open>(S e' g' \<and> e' \<in> a_win g') \<and> e = inv_upd (the (weight g g')) e'\<close> by blast
@@ -2241,8 +2269,8 @@ proof-
                   qed
                 qed
 
-                have x_len: "length (upd (the (weight g' (the (s e' g')))) e') = dimension" using y_len valid_updates
-                  by (metis P' \<open>energy_level e (LCons g p') (the_enat (llength p')) = apply_w g' (the (s e' g')) e'\<close> len_appl option.discI)
+                have x_len: "length (upd (the (weight g' (the (s e' g')))) e') = dimension" using y_len
+                  by (metis P' \<open>energy_level e (LCons g p') (the_enat (llength p')) = apply_w g' (the (s e' g')) e'\<close> \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close> len_appl option.distinct(1)) 
                 hence "x \<in> reachable_positions_len s g e" using P' reachable_positions_def x_def by auto
 
                 have "(apply_w g' (the (s e' g')) e') \<noteq> None" using P'
@@ -2260,10 +2288,12 @@ proof-
                   using \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close> by blast
 
                 have "(inv_upd (the (weight g' (the (s e' g')))) e'') e\<le> inv_upd (the (weight g' (the (s e' g')))) (upd (the (weight g' (the (s e' g')))) e')" 
-                  using E inverse_monotonic valid_updates \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close>
-                  using x_len by blast 
-                hence "(inv_upd (the (weight g' (the (s e' g')))) e'') e\<le> e'" using inv_up_leq valid_updates \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close>
-                  by (smt (verit, best) Collect_cong E \<open>apply_w g' (the (s e' g')) e' \<noteq> None\<close> galois_connection len_appl length_S x_len)
+                  using E inverse_monotonic  \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close>
+                  using x_len
+                  using domain_inv length_S by blast  
+                hence "(inv_upd (the (weight g' (the (s e' g')))) e'') e\<le> e'" using inv_up_leq  \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close>
+                  using \<open>apply_w g' (the (s e' g')) e' \<noteq> None\<close> energy_leq.trans
+                  using y_len by blast
                 thus "P y" unfolding P_def \<open>y = (g', e')\<close>
                   using \<open>S (inv_upd (the (weight g' (the (s e' g')))) e'') g'\<close> by blast 
               qed
@@ -2468,8 +2498,9 @@ proof-
                           qed
                         qed
 
-                        have x_len: "length (upd (the (weight g' g'')) e') = dimension" using y_len valid_updates
-                          using \<open>apply_w g' g'' e' \<noteq> None\<close> len_appl by blast 
+                        have x_len: "length (upd (the (weight g' g'')) e') = dimension" using y_len 
+                          using \<open>apply_w g' g'' e' \<noteq> None\<close> len_appl
+                          using \<open>weight g' g'' \<noteq> None\<close> by blast 
 
                         thus "x \<in> reachable_positions_len s g e"
                           using X x_def reachable_positions_def
@@ -2501,11 +2532,11 @@ proof-
                 using \<open>\<And>g''. weight g' g'' \<noteq> None \<Longrightarrow> \<exists>e0. S e0 g'' \<and> e0 e\<le> (the (apply_w g' g'' e'))\<close> some_eq_ex
                 by (smt (verit, del_insts))
               hence "\<And>g''. weight g' g'' \<noteq> None \<Longrightarrow> inv_upd (the (weight g' g'')) (index g'') e\<le> inv_upd (the (weight g' g'')) (the (apply_w g' g'' e'))"
-                using inverse_monotonic valid_updates P
-                by (metis (no_types, lifting) apply_update.simps len_appl)
+                using inverse_monotonic P
+                by (meson domain_inv length_S)
               hence  "\<And>g''. weight g' g'' \<noteq> None \<Longrightarrow> inv_upd (the (weight g' g'')) (index g'') e\<le> e'" 
-                using inv_up_leq valid_updates P
-                by (smt (verit) Collect_cong \<open>\<And>g''. weight g' g'' \<noteq> None \<Longrightarrow> S (index g'') g'' \<and> index g'' e\<le> upd (the (weight g' g'')) e'\<close> energy_leq_def galois_connection len_appl)            
+                using inv_up_leq P
+                by (meson I galois length_S y_len)        
               hence leq: "energy_sup dimension {inv_upd (the (weight g' g'')) (index g'')| g''. weight g' g'' \<noteq> None} e\<le> e'" 
                 using energy_sup_leq
                 by (smt (z3) \<open>y = (g', e')\<close> \<open>y \<in> {(g', e'). (g', e') \<in> reachable_positions s g e \<and> length e' = dimension}\<close> case_prodD mem_Collect_eq)
@@ -2523,7 +2554,7 @@ proof-
     qed
   qed  
   hence "energy_Min {e. \<exists>e'. S e' g \<and> e' e\<le> e} = a_win_min g" by simp
-  have "energy_Min {e. \<exists>e'. S e' g \<and> e' e\<le> e} = energy_Min {e. S e g}" unfolding energy_Min_def
+  have "energy_Min {e. \<exists>e'. S e' g \<and> e' e\<le> e} = energy_Min {e. S e g}" unfolding energy_Min_def finite_positions
     by (smt (verit) Collect_cong energy_leq.refl energy_leq.strict_trans1 mem_Collect_eq) 
   thus " energy_Min {e. S e g} = a_win_min g" using \<open>energy_Min {e. \<exists>e'. S e' g \<and> e' e\<le> e} = a_win_min g\<close> by simp
 qed
@@ -2750,16 +2781,26 @@ proof(rule antisymmetry)
                   fix a 
                   assume "a \<in> {inv_upd (the (weight g g')) (e_index g') |g'. weight g g' \<noteq> None}"
                   from this obtain g' where "weight g g' \<noteq> None" and "a=inv_upd (the (weight g g')) (e_index g')" by auto
-                  hence "a e\<le> inv_upd (the (weight g g')) (index' g')"
-                    using inverse_monotonic valid_updates \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> e_index g' \<in> F' g' \<and> e_index g' e\<le> index' g'\<close> F' possible_pareto_def
-                    using index'_len by presburger
+                  have "a e\<le> inv_upd (the (weight g g')) (index' g')"
+                    unfolding \<open>a=inv_upd (the (weight g g')) (e_index g')\<close> 
+                    using \<open>weight g g' \<noteq> None\<close> 
+                  proof(rule inverse_monotonic)
+                    show "e_index g' e\<le> index' g'" using \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> e_index g' \<in> F' g' \<and> e_index g' e\<le> index' g'\<close> \<open>weight g g' \<noteq> None\<close> by auto
+                    hence "length (e_index g') = dimension" using index'_len \<open>weight g g' \<noteq> None\<close> energy_leq_def
+                      by auto 
+                    thus "inverse_application (the (weight g g')) (e_index g') \<noteq> None"
+                      using domain_inv \<open>weight g g' \<noteq> None\<close>
+                      by auto 
+                    show "length (e_index g') = dimension"
+                      using \<open>length (e_index g') = dimension\<close> by auto
+                  qed
                   thus "\<exists>b\<in>{inv_upd (the (weight g g')) (index' g') |g'. weight g g' \<noteq> None}. a e\<le> b"
                     using \<open>weight g g' \<noteq> None\<close>
                     by blast 
                 qed
                 show "\<And>a. a \<in> {inv_upd (the (weight g g')) (e_index g') |g'. weight g g' \<noteq> None} \<Longrightarrow>
          length a = dimension"
-                  using len_inv_appl valid_updates index'_len \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> e_index g' \<in> F' g' \<and> e_index g' e\<le> index' g'\<close>
+                  using len_inv_appl  index'_len \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> e_index g' \<in> F' g' \<and> e_index g' e\<le> index' g'\<close>
                   using energy_leq_def by force 
               qed             
             qed
@@ -2781,15 +2822,16 @@ proof(rule antisymmetry)
                   assume "a \<in> {inv_upd (the (weight g g')) (index' g') |g'. weight g g' \<noteq> None}"
                   from this obtain g' where "weight g g' \<noteq> None" and "a=inv_upd (the (weight g g')) (index' g')" by auto
                   hence "a e\<le> inv_upd (the (weight g g')) (index g')"
-                    using inverse_monotonic valid_updates \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> e_index g' \<in> F' g' \<and> e_index g' e\<le> index' g'\<close> F' possible_pareto_def
-                    using \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> index' g' \<in> pareto_sup {(iteration ^^ n) (\<lambda>g. {}) |. n} g' \<and> index' g' e\<le> index g'\<close> energy_leq_def by auto 
+                    using inverse_monotonic  \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> e_index g' \<in> F' g' \<and> e_index g' e\<le> index' g'\<close> F' possible_pareto_def
+                    using \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> index' g' \<in> pareto_sup {(iteration ^^ n) (\<lambda>g. {}) |. n} g' \<and> index' g' e\<le> index g'\<close> energy_leq_def
+                    by (meson domain_inv index'_len) 
                   thus "\<exists>b\<in>{inv_upd (the (weight g g')) (index g') |g'. weight g g' \<noteq> None}. a e\<le> b"
                     using \<open>weight g g' \<noteq> None\<close>
                     by blast 
                 qed
                 show "\<And>a. a \<in> {inv_upd (the (weight g g')) (index' g') |g'. weight g g' \<noteq> None} \<Longrightarrow>
          length a = dimension"
-                  using len_inv_appl valid_updates index'_len by blast 
+                  using len_inv_appl  index'_len by blast 
               qed             
             qed
             
@@ -2846,10 +2888,18 @@ proof(rule antisymmetry)
                        e = inv_upd (the (weight g g')) e'))"
             from this obtain g' e' e'' where " weight g g' \<noteq> None" and "S e' g'" and "e = inv_upd (the (weight g g')) e'" and 
                       "e'' \<in> pareto_sup {(iteration ^^ n) (\<lambda>g. {}) |. n} g' \<and> e'' e\<le> e'" by auto
-            hence "inv_upd (the (weight g g')) e'' e\<le> inv_upd (the (weight g g')) e'" 
-              using inverse_monotonic valid_updates length_S
-              by blast 
-
+            have "inv_upd (the (weight g g')) e'' e\<le> inv_upd (the (weight g g')) e'" 
+              using \<open>weight g g' \<noteq> None\<close>
+            proof(rule inverse_monotonic)
+              show "e'' e\<le> e'" using \<open>e'' \<in> pareto_sup {(iteration ^^ n) (\<lambda>g. {}) |. n} g' \<and> e'' e\<le> e'\<close> by auto
+              have "length e' = dimension" using length_S \<open>weight g g' \<noteq> None\<close> \<open>S e' g'\<close> by auto
+              hence "length e''=  dimension" using \<open>e'' e\<le> e'\<close> energy_leq_def by auto
+              thus"inverse_application (the (weight g g')) e'' \<noteq> None"
+                using domain_inv \<open>weight g g' \<noteq> None\<close>
+                by blast 
+              show "length e'' = dimension"
+                by (simp add: \<open>length e'' = dimension\<close>)
+            qed
             have "e'' \<in> energy_Min {e. \<exists>F. F \<in> {(iteration ^^ n) (\<lambda>g. {}) |. n} \<and> e \<in> F g'}"
               using \<open>e'' \<in> pareto_sup {(iteration ^^ n) (\<lambda>g. {}) |. n} g' \<and> e'' e\<le> e'\<close> unfolding pareto_sup_def by simp
             hence "\<exists>n. e'' \<in> (iteration ^^ n) (\<lambda>g. {}) g'"

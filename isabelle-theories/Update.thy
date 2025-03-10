@@ -1,12 +1,12 @@
 section \<open>Bisping's Updates\<close>
 
 theory Update
-  imports Energy_Order "HOL-Algebra.Galois_Connection"
+  imports Energy_Order 
 begin
 
 text \<open>
-In this theory we define Bisping's updates and their application. Further, we introduce Bisping's ``inversion''
-of updates and relate the two. 
+In this theory we define a superset of Bisping's updates and their application. Further, we introduce Bisping's ``inversion''
+of updates and relate the two.
 \<close>
 
 subsection \<open>Bisping's Updates\<close>
@@ -14,7 +14,7 @@ subsection \<open>Bisping's Updates\<close>
 text \<open>
 Bisping allows three ways of updating a component of an energy: \<open>zero\<close> does not change the respective entry, 
 \<open>minus_one\<close> subtracts one and \<open>min_set\<close> $A$ for some set $A$ replaces the entry by the 
-minimum of entries whose index is contained in $A$. We further add \<open>plus_one\<close> to add one.
+minimum of entries whose index is contained in $A$. We further add \<open>plus_one\<close> to add one and omit the assumption that the a minimum has to consider the component it replaces.
 Updates are vectors where each entry contains the information, how the update changes the respective 
 component of energies. We now introduce a datatype such that updates can be represented as lists of \<open>update_component\<close>s.
 \<close>

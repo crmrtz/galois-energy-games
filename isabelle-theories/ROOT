@@ -14,9 +14,10 @@ session EnergyGames = HOL +
   theories
     Energy_Game
     Energy_Order 
+    Galois_Energy_Game
+    Decidability 
     Update 
     Bispings_Energy_Game
-    Decidability 
     List_Lemmas
 
 document_files
