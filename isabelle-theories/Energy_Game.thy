@@ -2466,7 +2466,7 @@ proof-
     by blast 
 qed
 
-text\<open>Finally, we can state the inductive characterisation of attacker winning budgets.\<close>
+text\<open>Finally, we can state the inductive characterisation of attacker winning budgets assuming energy-positional determinacy.\<close>
 
 lemma inductive_winning_budget:
   assumes "nonpos_winning_budget = winning_budget"

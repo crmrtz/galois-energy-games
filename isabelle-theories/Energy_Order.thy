@@ -1,4 +1,4 @@
-section \<open>Bisping's Energies\<close>
+section \<open>Energies\<close>
 
 theory Energy_Order
   imports Main List_Lemmas "HOL-Library.Extended_Nat" Well_Quasi_Orders.Well_Quasi_Orders

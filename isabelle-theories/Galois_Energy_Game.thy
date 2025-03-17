@@ -1,12 +1,12 @@
-section \<open>Bisping's Declining Energy Games\<close>
+section \<open>Galois Energy Games\<close>
 
 theory Galois_Energy_Game
   imports Energy_Game Energy_Order
 begin
 
 text\<open>We now define Galois energy games over vectors of naturals with the component-wise order. 
-We formalise this in this theory as an \<open>energy_game\<close> with a fixed dimension. In particular, we assume all updates to have an upward-closed domain (as \<open>domain_upw_closed\<close>) and be length-preserving (as \<open>len_appl\<close>). 
-We assume the latter for the inversion of updates too (as \<open>len_inv_appl\<close>) and assume that the inversion of an update is a total mapping from energies to the domain of the update (as \<open>domain_inv\<close>). \<close>
+We formalise this in this theory as an \<open>energy_game\<close> with a fixed dimension. In particular, we assume all updates to have an upward-closed domain (as \<open>domain_upw_closed\<close>) and be length-preserving (as \<open>upd_preserves_legth\<close>). 
+We assume the latter for the inversion of updates too (as \<open>inv_preserves_length\<close>) and assume that the inversion of an update is a total mapping from energies to the domain of the update (as \<open>domain_inv\<close>). \<close>
 
 locale galois_energy_game = energy_game attacker weight application
   for   attacker ::  "'position set" and 
@@ -16,11 +16,24 @@ locale galois_energy_game = energy_game attacker weight application
 + 
   fixes dimension :: "nat"
   assumes
-    domain_upw_closed: "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> e e\<le> e' \<Longrightarrow> application (the (weight p p')) e \<noteq> None \<Longrightarrow> application (the (weight p p')) e' \<noteq> None"
-    and len_appl: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> application (the (weight p p')) e \<noteq> None \<Longrightarrow> length (the (application (the (weight p p')) e)) = length e"
-    and len_inv_appl: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> length e = dimension \<Longrightarrow> length (the (inverse_application (the (weight p p')) e)) = length e"
-    and domain_inv: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> length e = dimension \<Longrightarrow> (inverse_application (the (weight p p')) e) \<noteq> None \<and> application (the (weight p p')) (the (inverse_application (the (weight p p')) e)) \<noteq> None"
-    and galois: "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> application (the (weight p p')) e' \<noteq> None \<Longrightarrow> length e = dimension \<Longrightarrow> length e' = dimension \<Longrightarrow> (the (inverse_application (the (weight p p')) e)) e\<le> e' = e e\<le> (the (application (the (weight p p')) e'))"
+    domain_upw_closed: "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> e e\<le> e' 
+                      \<Longrightarrow> application (the (weight p p')) e \<noteq> None 
+                      \<Longrightarrow> application (the (weight p p')) e' \<noteq> None"
+    and upd_preserves_legth: "\<And>p p' e. weight p p' \<noteq> None 
+                  \<Longrightarrow> application (the (weight p p')) e \<noteq> None 
+                  \<Longrightarrow> length (the (application (the (weight p p')) e)) 
+                      = length e"
+    and inv_preserves_length: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> length e = dimension 
+                      \<Longrightarrow> length (the (inverse_application (the (weight p p')) e)) 
+                          = length e"
+    and domain_inv: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> length e = dimension 
+                    \<Longrightarrow> (inverse_application (the (weight p p')) e) \<noteq> None 
+                        \<and> application (the (weight p p')) (the (inverse_application (the (weight p p')) e)) \<noteq> None"
+    and galois: "\<And>p p' e e'. weight p p' \<noteq> None 
+                \<Longrightarrow> application (the (weight p p')) e' \<noteq> None 
+                \<Longrightarrow> length e = dimension \<Longrightarrow> length e' = dimension 
+                \<Longrightarrow> (the (inverse_application (the (weight p p')) e)) e\<le> e' 
+                    = e e\<le> (the (application (the (weight p p')) e'))"
 begin
 
 abbreviation "upd u e \<equiv> the (application u e)"
@@ -32,7 +45,9 @@ $u^{-1} \circ u$ is decreasing and $u^{-1}$ and $u$ are monotonic.
 Note that this actually is equivalent to $u^{-1}$ and $u$ forming a Galois connection as stated by Erné et al.~\cite{galois}.
 \<close>
 
-lemma leq_up_inv: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> length e = dimension \<Longrightarrow> e e\<le> the (application (the (weight p p')) (the (inverse_application (the (weight p p')) e)))"
+lemma upd_inv_increasing: 
+  "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> length e = dimension 
+  \<Longrightarrow> e e\<le> the (application (the (weight p p')) (the (inverse_application (the (weight p p')) e)))"
 proof-
   fix p p' e 
   assume "weight p p' \<noteq> None" 
@@ -50,7 +65,7 @@ proof-
         using \<open>length e = dimension\<close> \<open>weight p p' \<noteq> None\<close> e'_def domain_inv u_def by presburger
       show "length e = dimension" using \<open>length e = dimension\<close>.
       show "length e' = dimension" unfolding e'_def
-        using \<open>length e = dimension\<close> \<open>weight p p' \<noteq> None\<close> len_inv_appl u_def by auto
+        using \<open>length e = dimension\<close> \<open>weight p p' \<noteq> None\<close> inv_preserves_length u_def by auto
     qed   
     hence "e e\<le> upd u (inv_upd u e)"
       using  \<open>inv_upd u e e\<le> inv_upd u e\<close> e'_def by auto
@@ -59,7 +74,10 @@ proof-
   qed
 qed
 
-lemma inv_up_leq: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> length e = dimension \<Longrightarrow> application (the (weight p p')) e \<noteq> None \<Longrightarrow> the (inverse_application (the (weight p p')) (the (application (the (weight p p')) e))) e\<le> e"
+lemma inv_upd_decreasing: 
+  "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> length e = dimension 
+  \<Longrightarrow> application (the (weight p p')) e \<noteq> None 
+  \<Longrightarrow> the (inverse_application (the (weight p p')) (the (application (the (weight p p')) e))) e\<le> e"
 proof-
   fix p p' e 
   assume "weight p p' \<noteq> None" 
@@ -72,7 +90,7 @@ proof-
       unfolding u_def using \<open>weight p p' \<noteq> None\<close> \<open>application (the (weight p p')) e \<noteq> None\<close> proof(rule galois)
       show \<open>length e = dimension\<close>  using \<open>length e = dimension\<close> .
       show \<open>length e' = dimension\<close> unfolding e'_def using \<open>length e = dimension\<close>
-        by (simp add: \<open>apply_w p p' e \<noteq> None\<close> \<open>weight p p' \<noteq> None\<close> len_appl u_def) 
+        by (simp add: \<open>apply_w p p' e \<noteq> None\<close> \<open>weight p p' \<noteq> None\<close> upd_preserves_legth u_def) 
     qed
     hence "inv_upd u (upd u e) e\<le> e" using e'_def
       by (simp add: energy_leq.refl) 
@@ -82,7 +100,10 @@ proof-
 qed
 
 
-lemma updates_monotonic: "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> length e = dimension \<Longrightarrow> e e\<le> e' \<Longrightarrow> application (the (weight p p')) e \<noteq> None \<Longrightarrow> the( application (the (weight p p')) e) e\<le> the (application (the (weight p p')) e')"
+lemma updates_monotonic: 
+  "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> length e = dimension \<Longrightarrow> e e\<le> e' 
+  \<Longrightarrow> application (the (weight p p')) e \<noteq> None 
+  \<Longrightarrow> the( application (the (weight p p')) e) e\<le> the (application (the (weight p p')) e')"
 proof-
   fix p p' e e' 
   assume "weight p p' \<noteq> None" and "length e = dimension" and "e e\<le> e'" and "application (the (weight p p')) e \<noteq> None"
@@ -94,7 +115,7 @@ proof-
       using \<open>application (the (weight p p')) e \<noteq> None\<close> \<open>e e\<le> e'\<close> domain_upw_closed
       using \<open>weight p p' \<noteq> None\<close> by blast 
     show "length (upd (the (weight p p')) e) = dimension"
-      using \<open>length e = dimension\<close> \<open>weight p p' \<noteq> None\<close> len_appl
+      using \<open>length e = dimension\<close> \<open>weight p p' \<noteq> None\<close> upd_preserves_legth
       using \<open>apply_w p p' e \<noteq> None\<close> by blast
     show "length e' = dimension"
       using \<open>length e = dimension\<close> \<open>e e\<le> e'\<close>
@@ -103,7 +124,7 @@ proof-
 
   have "inv_upd u (upd u e) e\<le> e" 
     unfolding u_def using \<open>weight p p' \<noteq> None\<close> \<open>length e = dimension\<close> \<open>application (the (weight p p')) e \<noteq> None\<close> 
-  proof(rule inv_up_leq)
+  proof(rule inv_upd_decreasing)
   qed
 
   hence "inv_upd u (upd u e) e\<le> e'" using \<open>e e\<le> e'\<close>
@@ -114,7 +135,10 @@ proof-
     using u_def by auto
 qed
 
-lemma inverse_monotonic: "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> length e = dimension \<Longrightarrow> e e\<le> e' \<Longrightarrow> inverse_application (the (weight p p')) e \<noteq> None \<Longrightarrow> the( inverse_application (the (weight p p')) e) e\<le> the (inverse_application (the (weight p p')) e')"
+lemma inverse_monotonic: 
+  "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> length e = dimension \<Longrightarrow> e e\<le> e' 
+  \<Longrightarrow> inverse_application (the (weight p p')) e \<noteq> None 
+  \<Longrightarrow> the( inverse_application (the (weight p p')) e) e\<le> the (inverse_application (the (weight p p')) e')"
 proof-
   fix p p' e e'
   assume "weight p p' \<noteq> None"
@@ -134,11 +158,11 @@ proof-
         using \<open>e e\<le> e'\<close> by (simp add: energy_leq_def)
       thus "length e'' = dimension"
         unfolding e''_def
-        by (simp add: \<open>weight p p' \<noteq> None\<close> len_inv_appl u_def) 
+        by (simp add: \<open>weight p p' \<noteq> None\<close> inv_preserves_length u_def) 
     qed
 
     have "e' e\<le> upd u e''"
-      unfolding e''_def u_def using \<open>weight p p' \<noteq> None\<close> proof(rule leq_up_inv)
+      unfolding e''_def u_def using \<open>weight p p' \<noteq> None\<close> proof(rule upd_inv_increasing)
       from \<open>length e = dimension\<close> show "length e' = dimension"
         using \<open>e e\<le> e'\<close> by (simp add: energy_leq_def)
     qed
@@ -447,7 +471,7 @@ next
                 qed
 
                 have x_len: "length (upd (the (weight g' (the (s e' g')))) e') = dimension" using y_len
-                  by (metis P' \<open>energy_level e (LCons g p') (the_enat (llength p')) = apply_w g' (the (s e' g')) e'\<close> \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close> len_appl option.distinct(1)) 
+                  by (metis P' \<open>energy_level e (LCons g p') (the_enat (llength p')) = apply_w g' (the (s e' g')) e'\<close> \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close> upd_preserves_legth option.distinct(1)) 
                 hence "x \<in> reachable_positions_len s g e" using P' reachable_positions_def x_def by auto
 
                 have "(apply_w g' (the (s e' g')) e') \<noteq> None" using P'
@@ -460,7 +484,7 @@ next
                 hence "wb x" using ind \<open>x \<in> reachable_positions_len s g e\<close> by simp
                 hence "winning_budget_len (the (apply_w g' (the (s e' g')) e')) (the (s e' g'))" using wb_def x_def by simp
                 then show ?thesis using \<open>g' \<in> attacker\<close> winning_budget_ind.simps
-                  by (metis \<open>apply_w g' (the (s e' g')) e' \<noteq> None\<close> \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close> len_appl winning_budget_len.attacker x_len) 
+                  by (metis \<open>apply_w g' (the (s e' g')) e' \<noteq> None\<close> \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close> upd_preserves_legth winning_budget_len.attacker x_len) 
               qed
             next
               case False
@@ -664,7 +688,7 @@ next
                         qed
 
                         have x_len: "length (upd (the (weight g' g'')) e') = dimension" using y_len
-                          using \<open>apply_w g' g'' e' \<noteq> None\<close> len_appl
+                          using \<open>apply_w g' g'' e' \<noteq> None\<close> upd_preserves_legth
                           using \<open>weight g' g'' \<noteq> None\<close> by blast  
 
                         thus "x \<in> reachable_positions_len s g e"

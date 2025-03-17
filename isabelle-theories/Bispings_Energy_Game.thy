@@ -1,11 +1,11 @@
-section \<open>Bisping's Declining Energy Games\<close>
+section \<open>Bisping's (Declining) Energy Games\<close>
 
 theory Bispings_Energy_Game
   imports Energy_Game Update Decidability
 begin
 
 text\<open>Bisping's only considers declining energy games over vectors of naturals. We generalise this by considering all valid updates. 
-We formalise this in this theory as an \<open>energy_game\<close> with a fixed dimension and show that such games are Galois energy games. \<close>
+We formalise this in this theory as an \<open>energy_game\<close> with a fixed dimension and show that such games are Galois energy games.\<close>
 
 locale bispings_energy_game = energy_game attacker weight apply_update 
   for attacker ::  "'position set" and 
@@ -43,7 +43,7 @@ proof
     by (metis valid_updates) 
 qed
 
-locale bispings_energy_game_assms = bispings_energy_game attacker weight dimension
+locale bispings_energy_game_decidable = bispings_energy_game attacker weight dimension
   for attacker ::  "'position set" and 
       weight :: "'position \<Rightarrow> 'position \<Rightarrow> update option" and 
       dimension :: "nat"
@@ -51,7 +51,7 @@ locale bispings_energy_game_assms = bispings_energy_game attacker weight dimensi
 assumes nonpos_eq_pos: "nonpos_winning_budget = winning_budget" and
         finite_positions: "finite positions"
 
-sublocale bispings_energy_game_assms \<subseteq> galois_energy_game_assms attacker weight apply_update apply_inv_update dimension
+sublocale bispings_energy_game_decidable \<subseteq> galois_energy_game_decidable attacker weight apply_update apply_inv_update dimension
 proof
   show "nonpos_winning_budget = winning_budget" using nonpos_eq_pos.
   show "finite positions" using finite_positions .

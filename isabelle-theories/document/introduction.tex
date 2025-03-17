@@ -4,7 +4,7 @@
 \noindent
 We provide a formal proof of decidability of Galois energy games over vectors of naturals with the component-wise order. 
 Afterwards we consider an instantiation of \textit{Bisping's declining energy games}.
-Bisping, Nestmann, and Jansen~\cite{bispingNestmann,bispingJansenNestmann} generalised the 
+Bisping, Nestmann, and Jansen~\cite{bispingNestmann,bispingJansenNestmann} generalised 
 Stirling's bisimulation game~\cite{stirling-bisim} to find Hennessy-Milner logic (HML) formulae distinguishing 
 processes. Those formalae are elements of some HML-sublanguage from 
 van Glabbeek’s linear-time-branching-time spectrum\cite{vanGlabbeek} 
@@ -19,7 +19,7 @@ Bisping provides an algorithm, which he claims decides this class of energy game
 We substantiate this claim by providing a proof in Isabelle/HOL using a simplyfied and generalised version of that algorithm.
 To do so we first formalise energy games with reachability winning conditions in Energy\_Game.thy. 
 Building upon this, we then formalise Galois energy games in Galois\_Energy\_Game.thy and prove decidability in Decidability.thy.
-Finally, we formalise Bisping's declining energy games in Bispings\_Energy\_Game.thy
+Finally, we formalise a superclass of Bisping's declining energy games in Bispings\_Energy\_Game.thy. In particular, we do not assume the games to be declining.
 An overview of all our theories is given by the following figure, where the theories above are imported by the ones below.
 
 \begin{figure}[H]
@@ -33,13 +33,13 @@ An overview of all our theories is given by the following figure, where the theo
 \tikzstyle{arrowdefi} = [thick, draw=color1, line width=2, ->, >=stealth]
 
 \begin{tikzpicture}[node distance=2cm]
-\node (bisping) [state, rect, text width=4.5cm] {Bispings\_Energy\_Game};
-\node (updates) [state, rect, above of=bisping, xshift=+2.4cm, yshift=2cm, text width=3.5cm] {Update};
-\node (order) [state, rect, above of=updates, text width=3.5cm] {Energy\_Order};
-\node (decidable) [state, rect, above of=bisping, xshift=-2.4cm, text width=3.5cm] {Decidability};
-\node (galois) [state, rect, above of=decidable, text width=3.5cm] {Galois\_Energy\_Game};
-\node (games) [state, rect, above of=galois, text width=3.5cm] {Energy\_Game};
-\node (list) [state, rect, above of=order, text width=3.5cm] {List\_Lemmas};
+\node (bisping) [state, rect, text width=5cm] {Bispings\_Energy\_Game};
+\node (updates) [state, rect, above of=bisping, xshift=+2.8cm, yshift=2cm, text width=4cm] {Update};
+\node (order) [state, rect, above of=updates, text width=4cm] {Energy\_Order};
+\node (decidable) [state, rect, above of=bisping, xshift=-2.8cm, text width=4cm] {Decidability};
+\node (galois) [state, rect, above of=decidable, text width=4cm] {Galois\_Energy\_Game};
+\node (games) [state, rect, above of=galois, text width=4cm] {Energy\_Game};
+\node (list) [state, rect, above of=order, text width=4cm] {List\_Lemmas};
 
 \draw 
 (order) -- (updates)
@@ -59,13 +59,13 @@ The file List\_Lemmas.thy contains a few simple observations about lists, specif
 Energy games are formalised as two-player zero-sum games with perfect information and reachability winning conditions played on labeled directed graphs in Energy\_Game.thy. 
 In particular, strategies and an inductive characterisation of winning budgets is discussed.
 
-In Energy\_Order.thy we introduce the energies, i.e.\ vectors with entries in the extended natural number, and the component-wise order. There we establish that this order is a well-founded join-semilattice. 
+In Energy\_Order.thy we introduce the energies, i.e.\ vectors with entries in the extended natural numbers, and the component-wise order. There we establish that this order is a well-founded bounded join-semilattice. 
 
 Galois energy games over such energies with a fixed dimension are formalised in Galois\_energy\_game.thy. 
 
-In Decidability.thy we formalise one iteration of a simplyfied and generalised version of Bisping's algorithm. Using an order on possible Pareto fronts we are able to apply Kleene's fixed point theorem. Assuming the game graph to be finite we thereby prove correctness of the algorithm. Further, we provide the key argument for termination, thus proving decidability of Galois energy games.
+In Decidability.thy we formalise one iteration of a simplyfied and generalised version of Bisping's algorithm. Using an order on possible Pareto fronts we are able to apply Kleene's fixed point theorem. Assuming the game graph to be finite we then prove correctness of the algorithm. Further, we provide the key argument for termination, thus proving decidability of Galois energy games.
 
-In Update.thy we then define a superset of Bisping's updates. These are partial functions of energy vectors updating each component by subtracting or adding one, replacing it with the minimum of some components or not changing it. In particular, we observe that these functions are monotonic and have upward-closed domains.
-Further, we introduce a generalisation of Bisping's inversion and relate it to Bisping's updates using Galois connections. 
+In Update.thy we define a superset of Bisping's updates. These are partial functions of energy vectors updating each component by subtracting or adding one, replacing it with the minimum of some components or not changing it. In particular, we observe that these functions are monotonic and have upward-closed domains.
+Further, we introduce a generalisation of Bisping's inversion and relate it to the updates using Galois connections. 
 
 Finally, we formalise energy games where all edges of the game graph are labeled with a representation of the previously discussed updates (and thereby formalise Bisping's declining energy games) in Bispings\_Energy\_Game.thy.

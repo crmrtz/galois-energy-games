@@ -1,4 +1,4 @@
-section \<open>Decidability of Bisping's Declining Energy Games\<close>
+section \<open>Decidability of Galois Energy Games\<close>
 
 theory Decidability
   imports Galois_Energy_Game Complete_Non_Orders.Kleene_Fixed_Point
@@ -8,9 +8,12 @@ text\<open>In this theory we give a proof of decidability for Galois energy game
 We do this by providing a proof of correctness of the simplifyed version of
 Bisping's Algorithm to calculate minimal attacker winning budgets. 
 We further formalise the key argument for its termination.
+
+For this we make two assumptions: First, we assume energy-positional determinacy and secondly, we assume the set of positions to be finite.
+Note that the first assumption is a fact lacking only a formalized proof.
 \<close>
 
-locale galois_energy_game_assms = galois_energy_game attacker weight application inverse_application dimension
+locale galois_energy_game_decidable = galois_energy_game attacker weight application inverse_application dimension
   for attacker ::  "'position set" and 
       weight :: "'position \<Rightarrow> 'position \<Rightarrow> 'label option" and
       application :: "'label \<Rightarrow> energy \<Rightarrow> energy option" and
@@ -321,7 +324,7 @@ proof
             case True
             hence "e \<in> energy_Min {inv_upd (the (weight g g')) e' | e' g'. length e' = dimension \<and> weight g g' \<noteq> None \<and> e' \<in> F g'}"
               using \<open>e \<in> iteration F g\<close> iteration_def by auto 
-            then show ?thesis using assms energy_Min_def len_inv_appl
+            then show ?thesis using assms energy_Min_def inv_preserves_length
               by force
           next
             case False
@@ -394,7 +397,7 @@ proof
         hence leq: "\<And>a. a\<in> {inv_upd (the (weight g g')) (e_index' g')| g'. weight g g' \<noteq> None} \<Longrightarrow> \<exists>b. b \<in> {inv_upd (the (weight g g')) (e_index g')| g'. weight g g' \<noteq> None} \<and> a e\<le> b"
           by blast
         have len: "\<And>a. a\<in> {inv_upd (the (weight g g')) (e_index' g')| g'. weight g g' \<noteq> None} \<Longrightarrow> length a = dimension"
-          using  E' E len_inv_appl
+          using  E' E inv_preserves_length
           using \<open>\<forall>g'. weight g g' \<noteq> None \<longrightarrow> length (e_index g') = dimension \<and> e_index g' \<in> F g'\<close> energy_leq_def by force
         hence leq: "energy_sup dimension {inv_upd (the (weight g g')) (e_index' g')| g'. weight g g' \<noteq> None} e\<le> energy_sup dimension {inv_upd (the (weight g g')) (e_index g')| g'. weight g g' \<noteq> None}"
         proof(cases "{g'. weight g g' \<noteq> None} = {}")
@@ -610,7 +613,7 @@ proof(rule antisymmetry)
                   by simp
                 hence "length (e_index' g') = dimension" using \<open>F \<in> possible_pareto\<close> possible_pareto_def
                   by blast 
-                thus "length a = dimension" using \<open>a=inv_upd (the (weight g g')) (e_index' g')\<close>  len_inv_appl \<open>weight g g' \<noteq> None\<close> by blast
+                thus "length a = dimension" using \<open>a=inv_upd (the (weight g g')) (e_index' g')\<close>  inv_preserves_length \<open>weight g g' \<noteq> None\<close> by blast
               qed
             qed
           qed
@@ -730,7 +733,7 @@ proof
            winning_budget_len (the (application (the (weight g g'a)) (the (inverse_application (the (weight g g')) e')))) g'a) "
         proof
           show "length (the (inverse_application (the (weight g g')) e')) = dimension" using \<open>length e' = dimension\<close> A2
-            by (simp add: len_inv_appl)
+            by (simp add: inv_preserves_length)
           show "g \<in> attacker \<and>
            (\<exists>g'a. weight g g'a \<noteq> None \<and>
            application (the (weight g g'a)) (the (inverse_application (the (weight g g')) e')) \<noteq> None \<and>
@@ -751,7 +754,7 @@ proof
                 proof 
                   from A1 A2 show "application (the (weight g g')) (the (inverse_application (the (weight g g')) e')) \<noteq> None" using domain_inv
                     by (simp add: \<open>length e' = dimension\<close>) 
-                  have "energy_leq e' (the (application (the (weight g g')) (the (inverse_application (the (weight g g')) e'))))" using leq_up_inv
+                  have "energy_leq e' (the (application (the (weight g g')) (the (inverse_application (the (weight g g')) e'))))" using upd_inv_increasing
                     using A2 \<open>length e' = dimension\<close> by blast 
                   thus "winning_budget_len (the (application (the (weight g g')) (the (inverse_application (the (weight g g')) e')))) g'" using  upwards_closure_wb_len
                     using A3 by auto 
@@ -776,10 +779,10 @@ proof
           by blast 
         from this obtain g' where G: "(weight g g' \<noteq> None) \<and> (application (the (weight g g')) e)\<noteq> None \<and> (winning_budget_len (the (application (the (weight g g')) e)) g')" by auto
         hence "length (the (application (the (weight g g')) e)) = dimension"
-          using \<open>length e = dimension\<close> len_appl by blast 
+          using \<open>length e = dimension\<close> upd_preserves_legth by blast 
         hence W: "winning_budget_len (the (inverse_application (the (weight g g')) (the (application (the (weight g g')) e)))) g" using G attacker_inv_in_winning_budget
           by (meson A1)
-        have "energy_leq (the (inverse_application (the (weight g g')) (the (application (the (weight g g')) e)))) e" using inv_up_leq
+        have "energy_leq (the (inverse_application (the (weight g g')) (the (application (the (weight g g')) e)))) e" using inv_upd_decreasing
           using G
           using \<open>length e = dimension\<close> by blast
         hence E: "e = (the (inverse_application (the (weight g g')) (the (application (the (weight g g')) e))))" using W A1 A2 energy_Min_def
@@ -807,7 +810,7 @@ proof
         hence "weight g g' \<noteq> None" by auto
         from eg have "length e' = dimension" using winning_budget_len.simps by blast 
         thus "length e = dimension" using eg \<open>length e' = dimension\<close>
-          using len_inv_appl by blast
+          using inv_preserves_length by blast
       qed
 
       show ?thesis 
@@ -854,7 +857,7 @@ proof
                     proof
 
                       have "e' e\<le> (upd (the (weight g g')) x)" 
-                        using X leq_up_inv 
+                        using X upd_inv_increasing 
                         by (metis winning_budget_len.simps)
                       have "winning_budget_len (inv_upd (the (weight g g')) e') g"
                         using X attacker_inv_in_winning_budget \<open>weight g g' \<noteq> None\<close> \<open>g \<in> attacker\<close>
@@ -1094,7 +1097,7 @@ proof
             hence "inverse_application (the (weight g g')) e \<noteq> None" using domain_inv  \<open>weight g g' \<noteq> None\<close> by simp
 
             have leq: "energy_leq (strat g') (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None})" using energy_sup_in \<open>weight g g' \<noteq> None\<close>
-              by (metis (mono_tags, lifting) E \<open>length e = dimension\<close> len_inv_appl mem_Collect_eq ) 
+              by (metis (mono_tags, lifting) E \<open>length e = dimension\<close> inv_preserves_length mem_Collect_eq ) 
 
             show "application (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}) \<noteq> None \<and>
             winning_budget_len (the (application (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}))) g'"
@@ -1108,13 +1111,13 @@ proof
                 using leq domain_upw_closed
                 using \<open>weight g g' \<noteq> None\<close> by blast  
 
-              have "energy_leq e (the (application (the (weight g g')) (strat g')))" using leq_up_inv 
+              have "energy_leq e (the (application (the (weight g g')) (strat g')))" using upd_inv_increasing 
                 by (metis \<open>application (the (weight g g')) (strat g') = application (the (weight g g')) (the (inverse_application (the (weight g g')) e))\<close> \<open>length e = dimension\<close> \<open>weight g g' \<noteq> None\<close>) 
               hence W: "winning_budget_len (the (application (the (weight g g')) (strat g'))) g'" using E upwards_closure_wb_len
                 by blast
               have "energy_leq (the (application (the (weight g g')) (strat g'))) (the (application (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None})))" 
                 using updates_monotonic 
-                by (smt (verit, del_insts) Collect_cong E \<open>application (the (weight g g')) (strat g') \<noteq> None\<close> \<open>length e = dimension\<close> \<open>weight g g' \<noteq> None\<close> len_inv_appl leq)
+                by (smt (verit, del_insts) Collect_cong E \<open>application (the (weight g g')) (strat g') \<noteq> None\<close> \<open>length e = dimension\<close> \<open>weight g g' \<noteq> None\<close> inv_preserves_length leq)
               thus "winning_budget_len (the (application (the (weight g g')) (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}))) g'" 
                 using W upwards_closure_wb_len by blast
             qed
@@ -1165,7 +1168,7 @@ proof
             using A1 A2 winning_budget_len.cases energy_Min_def
             by (metis (mono_tags, lifting) mem_Collect_eq) 
           from \<open>weight g g' \<noteq> None\<close> have "strat g' = the ((inverse_application (the (weight g g'))) (the (application (the (weight g g')) e)))" using S by auto
-          thus "energy_leq (strat g') e" using inv_up_leq  \<open>application (the (weight g g')) e \<noteq> None\<close>
+          thus "energy_leq (strat g') e" using inv_upd_decreasing  \<open>application (the (weight g g')) e \<noteq> None\<close>
             using \<open>length e = dimension\<close> \<open>weight g g' \<noteq> None\<close> by presburger
         qed
         hence "energy_leq (energy_sup dimension {strat g' |g'. weight g g' \<noteq> None}) e" using energy_sup_leq \<open>length e =dimension\<close>
@@ -1327,18 +1330,18 @@ proof
                       show "application (the (weight g g')) e' \<noteq> None \<and> winning_budget_len (the (application (the (weight g g')) e')) g' "
                       proof
                         have "energy_leq (strat g') e'" using S energy_sup_in \<open>weight g g' \<noteq> None\<close> 
-                          by (smt (verit) E \<open>length e'' = dimension\<close> len_inv_appl mem_Collect_eq)
+                          by (smt (verit) E \<open>length e'' = dimension\<close> inv_preserves_length mem_Collect_eq)
                         have "application (the (weight g g')) (strat g') \<noteq> None" using E domain_inv domain_inv \<open>length e''=dimension\<close>
                           by (metis \<open>weight g g' \<noteq> None\<close> )
                         thus "application (the (weight g g')) e' \<noteq> None" using domain_upw_closed \<open>energy_leq (strat g') e'\<close>
                           using \<open>weight g g' \<noteq> None\<close> by blast
-                        have "energy_leq e'' (the (application (the (weight g g')) (strat g')))" using E leq_up_inv
+                        have "energy_leq e'' (the (application (the (weight g g')) (strat g')))" using E upd_inv_increasing
                           using \<open>length e'' = dimension\<close> \<open>weight g g' \<noteq> None\<close>  by metis
                         hence W: "winning_budget_len (the (application (the (weight g g')) (strat g'))) g'" using upwards_closure_wb_len
                           using E by blast
                         from \<open>energy_leq (strat g') e'\<close> have "energy_leq (the (application (the (weight g g')) (strat g')))  (the (application (the (weight g g')) e'))" 
                           using updates_monotonic  \<open>application (the (weight g g')) (strat g') \<noteq> None\<close>
-                          by (smt (verit) Collect_cong E \<open>length e'' = dimension\<close> \<open>weight g g' \<noteq> None\<close> len_inv_appl)
+                          by (smt (verit) Collect_cong E \<open>length e'' = dimension\<close> \<open>weight g g' \<noteq> None\<close> inv_preserves_length)
                         thus "winning_budget_len (the (application (the (weight g g')) e')) g' " using upwards_closure_wb_len W
                           by blast 
                       qed
@@ -1460,7 +1463,7 @@ proof
                 hence "energy_leq e (strat_e g')" using energy_Min_def by auto
 
                 hence "length a = dimension " using \<open>a = strat' g' \<and> weight g g' \<noteq> None\<close> energy_Min_def
-                  by (metis (no_types, lifting) E len_inv_appl mem_Collect_eq winning_budget_len.cases)
+                  by (metis (no_types, lifting) E inv_preserves_length mem_Collect_eq winning_budget_len.cases)
 
                 have leq: "energy_leq (the (inverse_application (the (weight g g')) e)) (the (inverse_application (the (weight g g')) (strat_e g')))" 
                 proof(rule inverse_monotonic)
@@ -1620,7 +1623,7 @@ proof
             by blast 
           have "a=inv_upd (the (weight g g')) x" using X \<open>a= strat' g' \<and> weight g g' \<noteq> None\<close> by simp
           thus "length a = dimension" 
-            using \<open>length x = dimension\<close> len_inv_appl  \<open>a= strat' g' \<and> weight g g' \<noteq> None\<close> by simp
+            using \<open>length x = dimension\<close> inv_preserves_length  \<open>a= strat' g' \<and> weight g g' \<noteq> None\<close> by simp
         qed
 
         show "False" 
@@ -1920,7 +1923,7 @@ proof-
                        e = inv_upd (the (weight g g')) e'))"
       from this obtain g' e' where "weight g g' \<noteq> None" and "(S e' g' \<and> length e' = dimension) \<and>
                        e = inv_upd (the (weight g g')) e'" by auto
-      thus "length e = dimension" using len_inv_appl  by simp
+      thus "length e = dimension" using inv_preserves_length  by simp
     qed
   qed
 qed
@@ -1990,7 +1993,7 @@ proof-
                         unfolding E proof(rule energy_sup_in)
                         show "inv_upd (the (weight g g')) (index g')
                              \<in> {inv_upd (the (weight g g')) (index g') |g'. weight g g' \<noteq> None}" using \<open>weight g g' \<noteq> None\<close> by auto
-                        show "length (inv_upd (the (weight g g')) (index g')) = dimension" using len_inv_appl  \<open>weight g g' \<noteq> None\<close> \<open>S (index g') g' \<and> index g' \<in> a_win g'\<close> winning_budget_len.simps
+                        show "length (inv_upd (the (weight g g')) (index g')) = dimension" using inv_preserves_length  \<open>weight g g' \<noteq> None\<close> \<open>S (index g') g' \<and> index g' \<in> a_win g'\<close> winning_budget_len.simps
                           by (metis mem_Collect_eq)
                       qed
 
@@ -2005,11 +2008,11 @@ proof-
                       have "index g' e\<le> upd (the (weight g g')) e"
                       proof(rule energy_leq.trans) 
                         show "index g' e\<le> upd (the (weight g g')) (inv_upd (the (weight g g')) (index g'))"
-                          using leq_up_inv  \<open>S (index g') g' \<and> index g' \<in> a_win g'\<close> winning_budget_len.simps
+                          using upd_inv_increasing  \<open>S (index g') g' \<and> index g' \<in> a_win g'\<close> winning_budget_len.simps
                           by (metis \<open>weight g g' \<noteq> None\<close> mem_Collect_eq)
                         show "upd (the (weight g g')) (inv_upd (the (weight g g')) (index g')) e\<le>
     upd (the (weight g g')) e" using leq updates_monotonic  \<open>weight g g' \<noteq> None\<close>
-                          by (metis \<open>S (index g') g' \<and> index g' \<in> a_win g'\<close> domain_inv len_inv_appl length_S) 
+                          by (metis \<open>S (index g') g' \<and> index g' \<in> a_win g'\<close> domain_inv inv_preserves_length length_S) 
                       qed
                       
                       thus "winning_budget_len (upd (the (weight g g')) e) g'"
@@ -2035,7 +2038,7 @@ proof-
           from this obtain g' e' where "weight g g' \<noteq> None" and "(S e' g' \<and> e' \<in> a_win g') \<and> e = inv_upd (the (weight g g')) e'" by auto
           hence "e' e\<le> upd (the (weight g g')) e" 
             using  updates_monotonic domain_inv domain_inv
-            by (metis length_S leq_up_inv)
+            by (metis length_S upd_inv_increasing)
           show "winning_budget_len e g" 
           proof(rule winning_budget_len.intros(2))
             show "length e = dimension \<and>
@@ -2046,7 +2049,7 @@ proof-
               have"length e' = dimension" using \<open>(S e' g' \<and> e' \<in> a_win g') \<and> e = inv_upd (the (weight g g')) e'\<close> winning_budget_len.simps
                 by blast
               show "length e = dimension"
-                using \<open>(S e' g' \<and> e' \<in> a_win g') \<and> e = inv_upd (the (weight g g')) e'\<close> len_inv_appl \<open>length e' = dimension\<close> \<open>weight g g' \<noteq> None\<close>
+                using \<open>(S e' g' \<and> e' \<in> a_win g') \<and> e = inv_upd (the (weight g g')) e'\<close> inv_preserves_length \<open>length e' = dimension\<close> \<open>weight g g' \<noteq> None\<close>
                 by blast               
               show "g \<in> attacker \<and>
     (\<exists>g'. weight g g' \<noteq> None \<and>
@@ -2270,7 +2273,7 @@ proof-
                 qed
 
                 have x_len: "length (upd (the (weight g' (the (s e' g')))) e') = dimension" using y_len
-                  by (metis P' \<open>energy_level e (LCons g p') (the_enat (llength p')) = apply_w g' (the (s e' g')) e'\<close> \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close> len_appl option.distinct(1)) 
+                  by (metis P' \<open>energy_level e (LCons g p') (the_enat (llength p')) = apply_w g' (the (s e' g')) e'\<close> \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close> upd_preserves_legth option.distinct(1)) 
                 hence "x \<in> reachable_positions_len s g e" using P' reachable_positions_def x_def by auto
 
                 have "(apply_w g' (the (s e' g')) e') \<noteq> None" using P'
@@ -2291,7 +2294,7 @@ proof-
                   using E inverse_monotonic  \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close>
                   using x_len
                   using domain_inv length_S by blast  
-                hence "(inv_upd (the (weight g' (the (s e' g')))) e'') e\<le> e'" using inv_up_leq  \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close>
+                hence "(inv_upd (the (weight g' (the (s e' g')))) e'') e\<le> e'" using inv_upd_decreasing  \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close>
                   using \<open>apply_w g' (the (s e' g')) e' \<noteq> None\<close> energy_leq.trans
                   using y_len by blast
                 thus "P y" unfolding P_def \<open>y = (g', e')\<close>
@@ -2499,7 +2502,7 @@ proof-
                         qed
 
                         have x_len: "length (upd (the (weight g' g'')) e') = dimension" using y_len 
-                          using \<open>apply_w g' g'' e' \<noteq> None\<close> len_appl
+                          using \<open>apply_w g' g'' e' \<noteq> None\<close> upd_preserves_legth
                           using \<open>weight g' g'' \<noteq> None\<close> by blast 
 
                         thus "x \<in> reachable_positions_len s g e"
@@ -2535,7 +2538,7 @@ proof-
                 using inverse_monotonic P
                 by (meson domain_inv length_S)
               hence  "\<And>g''. weight g' g'' \<noteq> None \<Longrightarrow> inv_upd (the (weight g' g'')) (index g'') e\<le> e'" 
-                using inv_up_leq P
+                using inv_upd_decreasing P
                 by (meson I galois length_S y_len)        
               hence leq: "energy_sup dimension {inv_upd (the (weight g' g'')) (index g'')| g''. weight g' g'' \<noteq> None} e\<le> e'" 
                 using energy_sup_leq
@@ -2800,7 +2803,7 @@ proof(rule antisymmetry)
                 qed
                 show "\<And>a. a \<in> {inv_upd (the (weight g g')) (e_index g') |g'. weight g g' \<noteq> None} \<Longrightarrow>
          length a = dimension"
-                  using len_inv_appl  index'_len \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> e_index g' \<in> F' g' \<and> e_index g' e\<le> index' g'\<close>
+                  using inv_preserves_length  index'_len \<open>\<And>g'. weight g g' \<noteq> None \<Longrightarrow> e_index g' \<in> F' g' \<and> e_index g' e\<le> index' g'\<close>
                   using energy_leq_def by force 
               qed             
             qed
@@ -2831,7 +2834,7 @@ proof(rule antisymmetry)
                 qed
                 show "\<And>a. a \<in> {inv_upd (the (weight g g')) (index' g') |g'. weight g g' \<noteq> None} \<Longrightarrow>
          length a = dimension"
-                  using len_inv_appl  index'_len by blast 
+                  using inv_preserves_length  index'_len by blast 
               qed             
             qed
             
