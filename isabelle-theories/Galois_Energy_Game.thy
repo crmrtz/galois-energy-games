@@ -1,112 +1,121 @@
 section \<open>Galois Energy Games\<close>
 
 theory Galois_Energy_Game
-  imports Energy_Game Energy_Order
+  imports Energy_Game Well_Quasi_Orders.Well_Quasi_Orders
 begin
 
-text\<open>We now define Galois energy games over vectors of naturals with the component-wise order. 
-We formalise this in this theory as an \<open>energy_game\<close> with a fixed dimension. In particular, we assume all updates to have an upward-closed domain (as \<open>domain_upw_closed\<close>) and be length-preserving (as \<open>upd_preserves_legth\<close>). 
-We assume the latter for the inversion of updates too (as \<open>inv_preserves_length\<close>) and assume that the inversion of an update is a total mapping from energies to the domain of the update (as \<open>domain_inv\<close>). \<close>
+text\<open>We now define Galois energy games over well-founded bounded join-semilattices.
+We do this by building on a previously defined \<open>energy_game\<close>.
+In particular, we add a set of energies \<open>energies\<close> with an order \<open>order\<close> and a supremum mapping \<open>energy_sup\<close>.
+Then, we assume the set to be partially ordered in \<open>energy_order\<close>, the order to be well-founded in \<open>energy_wqo\<close>, 
+the supremum to map finite sets to the least upper bound \<open>bounded_join_semilattice\<close> and the set to be upward-closed w.r.t\ the order in \<open>upward_closed_energies\<close>. 
+Further, we assume the updates to actually map energies (elements of the set \<open>enegies\<close>) to energies with \<open>upd_well_defined\<close>
+and assume the inversion to map updates to total functions between the set of energies and the domain of the update in \<open>inv_well_defined\<close>.
+The latter is assumed to be upward-closed in \<open>domain_upw_closed\<close>.
+Finally, we assume the updates to be Galois-connected with their inverse in \<open>galois\<close>. 
+ \<close>
 
 locale galois_energy_game = energy_game attacker weight application
   for   attacker ::  "'position set" and 
         weight :: "'position \<Rightarrow> 'position \<Rightarrow> 'label option" and
-        application :: "'label \<Rightarrow> energy \<Rightarrow> energy option" and
-        inverse_application :: "'label \<Rightarrow> energy \<Rightarrow> energy option"
+        application :: "'label \<Rightarrow> 'energy \<Rightarrow> 'energy option" and
+        inverse_application :: "'label \<Rightarrow> 'energy \<Rightarrow> 'energy option"
 + 
-  fixes dimension :: "nat"
-  assumes
-    domain_upw_closed: "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> e e\<le> e' 
-                      \<Longrightarrow> application (the (weight p p')) e \<noteq> None 
-                      \<Longrightarrow> application (the (weight p p')) e' \<noteq> None"
-    and upd_preserves_legth: "\<And>p p' e. weight p p' \<noteq> None 
-                  \<Longrightarrow> application (the (weight p p')) e \<noteq> None 
-                  \<Longrightarrow> length (the (application (the (weight p p')) e)) 
-                      = length e"
-    and inv_preserves_length: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> length e = dimension 
-                      \<Longrightarrow> length (the (inverse_application (the (weight p p')) e)) 
-                          = length e"
-    and domain_inv: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> length e = dimension 
-                    \<Longrightarrow> (inverse_application (the (weight p p')) e) \<noteq> None 
-                        \<and> application (the (weight p p')) (the (inverse_application (the (weight p p')) e)) \<noteq> None"
-    and galois: "\<And>p p' e e'. weight p p' \<noteq> None 
-                \<Longrightarrow> application (the (weight p p')) e' \<noteq> None 
-                \<Longrightarrow> length e = dimension \<Longrightarrow> length e' = dimension 
-                \<Longrightarrow> (the (inverse_application (the (weight p p')) e)) e\<le> e' 
-                    = e e\<le> (the (application (the (weight p p')) e'))"
+  fixes energies :: "'energy set" and
+        order :: "'energy \<Rightarrow> 'energy \<Rightarrow> bool" (infix "e\<le>" 80)and 
+        energy_sup :: "'energy set \<Rightarrow> 'energy"
+      assumes 
+        energy_order: "ordering order (\<lambda>e e'. order e e' \<and> e \<noteq> e')" and 
+        energy_wqo: "wqo_on order energies" and 
+        bounded_join_semilattice: "\<And> set s'. set \<subseteq> energies \<Longrightarrow> finite set 
+        \<Longrightarrow> energy_sup set \<in> energies 
+            \<and> (\<forall>s. s \<in> set \<longrightarrow> order s (energy_sup set)) 
+            \<and> (s' \<in> energies \<and> (\<forall>s. s \<in> set \<longrightarrow> order s s') \<longrightarrow> order (energy_sup set) s')" and
+        upward_closed_energies: "\<And>e e'. e \<in> energies \<Longrightarrow> e e\<le> e' \<Longrightarrow> e' \<in> energies" and
+        upd_well_defined: "\<And>p p' e. weight p p' \<noteq> None 
+        \<Longrightarrow> application (the (weight p p')) e \<noteq> None \<Longrightarrow> e \<in> energies 
+        \<Longrightarrow> (the (application (the (weight p p')) e)) \<in> energies" and
+        inv_well_defined: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> e \<in> energies 
+        \<Longrightarrow> (inverse_application (the (weight p p')) e) \<noteq> None 
+        \<and> (the (inverse_application (the (weight p p')) e)) \<in> energies 
+        \<and> application (the (weight p p')) (the (inverse_application (the (weight p p')) e)) \<noteq> None" and        
+        domain_upw_closed: "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> order e e' 
+        \<Longrightarrow> application (the (weight p p')) e \<noteq> None 
+        \<Longrightarrow> application (the (weight p p')) e' \<noteq> None" and
+        galois: "\<And>p p' e e'. weight p p' \<noteq> None 
+        \<Longrightarrow> application (the (weight p p')) e' \<noteq> None 
+        \<Longrightarrow> e \<in> energies \<Longrightarrow> e' \<in> energies 
+        \<Longrightarrow> order (the (inverse_application (the (weight p p')) e)) e' = order e (the (application (the (weight p p')) e'))"
 begin
 
 abbreviation "upd u e \<equiv> the (application u e)"
 abbreviation "inv_upd u e \<equiv> the (inverse_application u e)"
 
-text\<open>
-We now show that the energy game being a Galois energy games implies that $u\circ u^{-1}$ is increasing,
-$u^{-1} \circ u$ is decreasing and $u^{-1}$ and $u$ are monotonic. 
-Note that this actually is equivalent to $u^{-1}$ and $u$ forming a Galois connection as stated by Erné et al.~\cite{galois}.
-\<close>
+abbreviation energy_l:: "'energy \<Rightarrow> 'energy \<Rightarrow> bool" (infix "e<" 80) where 
+  "energy_l e e' \<equiv>  e e\<le> e' \<and> e \<noteq> e'"
 
-lemma upd_inv_increasing: 
-  "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> length e = dimension 
-  \<Longrightarrow> e e\<le> the (application (the (weight p p')) (the (inverse_application (the (weight p p')) e)))"
+lemma leq_up_inv: 
+   "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> e\<in>energies 
+    \<Longrightarrow> order e (the (application (the (weight p p')) (the (inverse_application (the (weight p p')) e))))"
 proof-
   fix p p' e 
   assume "weight p p' \<noteq> None" 
   define u where "u= the (weight p p')"
-  show "length e = dimension \<Longrightarrow>e e\<le> the (application (the (weight p p')) (the (inverse_application (the (weight p p')) e)))"
+  show "e\<in>energies  \<Longrightarrow> order e (the (application (the (weight p p')) (the (inverse_application (the (weight p p')) e))))"
   proof-
-    assume "length e = dimension"
-    have "inv_upd u e e\<le> inv_upd u e"
-      by (simp add: energy_leq.refl)
+    assume "e\<in>energies"
+    have "order (inv_upd u e) (inv_upd u e)"
+      by (meson local.energy_order ordering.eq_iff)
 
     define e' where "e' = inv_upd u e"
     have "(inv_upd u e e\<le> e') = e e\<le> upd u e'"
       unfolding u_def using \<open>weight p p' \<noteq> None\<close> proof(rule galois)
       show "apply_w p p' e' \<noteq> None"
-        using \<open>length e = dimension\<close> \<open>weight p p' \<noteq> None\<close> e'_def domain_inv u_def by presburger
-      show "length e = dimension" using \<open>length e = dimension\<close>.
-      show "length e' = dimension" unfolding e'_def
-        using \<open>length e = dimension\<close> \<open>weight p p' \<noteq> None\<close> inv_preserves_length u_def by auto
+        using \<open>e\<in>energies\<close> \<open>weight p p' \<noteq> None\<close> e'_def inv_well_defined u_def by presburger
+      show "e\<in>energies" using \<open>e\<in>energies\<close>.
+      show "e'\<in>energies" unfolding e'_def
+        using \<open>e\<in>energies\<close> \<open>weight p p' \<noteq> None\<close> inv_well_defined u_def
+        by blast
     qed   
     hence "e e\<le> upd u (inv_upd u e)"
       using  \<open>inv_upd u e e\<le> inv_upd u e\<close> e'_def by auto
-    thus "e e\<le> the (application (the (weight p p')) (the (inverse_application (the (weight p p')) e)))"
+    thus "order e (the (application (the (weight p p')) (the (inverse_application (the (weight p p')) e))))"
       using u_def by auto
   qed
 qed
 
-lemma inv_upd_decreasing: 
-  "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> length e = dimension 
+lemma inv_up_leq: 
+  "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> e\<in>energies 
   \<Longrightarrow> application (the (weight p p')) e \<noteq> None 
   \<Longrightarrow> the (inverse_application (the (weight p p')) (the (application (the (weight p p')) e))) e\<le> e"
 proof-
   fix p p' e 
   assume "weight p p' \<noteq> None" 
   define u where "u= the (weight p p')"
-  show "length e = dimension \<Longrightarrow> application (the (weight p p')) e \<noteq> None \<Longrightarrow> the (inverse_application (the (weight p p')) (the (application (the (weight p p')) e))) e\<le> e"
+  show "e\<in>energies \<Longrightarrow> application (the (weight p p')) e \<noteq> None \<Longrightarrow> the (inverse_application (the (weight p p')) (the (application (the (weight p p')) e))) e\<le> e"
   proof-
-    assume "length e = dimension" and "application (the (weight p p')) e \<noteq> None"
+    assume "e\<in>energies" and "application (the (weight p p')) e \<noteq> None"
     define e' where "e'= upd u e"
     have "(inv_upd u e' e\<le> e) = e' e\<le> upd u e"
       unfolding u_def using \<open>weight p p' \<noteq> None\<close> \<open>application (the (weight p p')) e \<noteq> None\<close> proof(rule galois)
-      show \<open>length e = dimension\<close>  using \<open>length e = dimension\<close> .
-      show \<open>length e' = dimension\<close> unfolding e'_def using \<open>length e = dimension\<close>
-        by (simp add: \<open>apply_w p p' e \<noteq> None\<close> \<open>weight p p' \<noteq> None\<close> upd_preserves_legth u_def) 
+      show \<open>e\<in>energies\<close>  using \<open>e\<in>energies\<close> .
+      show \<open>e'\<in>energies\<close> unfolding e'_def using \<open>e\<in>energies\<close>
+        using \<open>apply_w p p' e \<noteq> None\<close> \<open>weight p p' \<noteq> None\<close> u_def upd_well_defined by auto 
     qed
     hence "inv_upd u (upd u e) e\<le> e" using e'_def
-      by (simp add: energy_leq.refl) 
+      by (meson energy_order ordering.eq_iff) 
     thus "the (inverse_application (the (weight p p')) (the (application (the (weight p p')) e))) e\<le> e"
       using u_def by simp
   qed
 qed
 
-
 lemma updates_monotonic: 
-  "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> length e = dimension \<Longrightarrow> e e\<le> e' 
+  "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow>e\<in>energies \<Longrightarrow> e e\<le> e' 
   \<Longrightarrow> application (the (weight p p')) e \<noteq> None 
   \<Longrightarrow> the( application (the (weight p p')) e) e\<le> the (application (the (weight p p')) e')"
 proof-
   fix p p' e e' 
-  assume "weight p p' \<noteq> None" and "length e = dimension" and "e e\<le> e'" and "application (the (weight p p')) e \<noteq> None"
+  assume "weight p p' \<noteq> None" and "e\<in>energies" and "e e\<le> e'" and "application (the (weight p p')) e \<noteq> None"
   define u where "u= the (weight p p')"
   define e'' where "e'' = upd u e"
   have "inv_upd u (upd u e) e\<le> e' = (upd u e) e\<le> upd u e'" 
@@ -114,21 +123,20 @@ proof-
     show "apply_w p p' e' \<noteq> None"
       using \<open>application (the (weight p p')) e \<noteq> None\<close> \<open>e e\<le> e'\<close> domain_upw_closed
       using \<open>weight p p' \<noteq> None\<close> by blast 
-    show "length (upd (the (weight p p')) e) = dimension"
-      using \<open>length e = dimension\<close> \<open>weight p p' \<noteq> None\<close> upd_preserves_legth
+    show "(upd (the (weight p p')) e)\<in>energies"
+      using \<open>e\<in>energies\<close> \<open>weight p p' \<noteq> None\<close> upd_well_defined
       using \<open>apply_w p p' e \<noteq> None\<close> by blast
-    show "length e' = dimension"
-      using \<open>length e = dimension\<close> \<open>e e\<le> e'\<close>
-      by (simp add: energy_leq_def)
+    show "e'\<in>energies"
+      using \<open>e\<in>energies\<close> \<open>e e\<le> e'\<close> upward_closed_energies by auto
   qed
 
   have "inv_upd u (upd u e) e\<le> e" 
-    unfolding u_def using \<open>weight p p' \<noteq> None\<close> \<open>length e = dimension\<close> \<open>application (the (weight p p')) e \<noteq> None\<close> 
-  proof(rule inv_upd_decreasing)
+    unfolding u_def using \<open>weight p p' \<noteq> None\<close> \<open>e\<in>energies\<close> \<open>application (the (weight p p')) e \<noteq> None\<close> 
+  proof(rule inv_up_leq)
   qed
 
-  hence "inv_upd u (upd u e) e\<le> e'" using \<open>e e\<le> e'\<close>
-    by (meson energy_leq.trans) 
+  hence "inv_upd u (upd u e) e\<le> e'" using \<open>e e\<le> e'\<close> energy_order ordering_def
+    by (metis (mono_tags, lifting) partial_preordering.trans) 
   hence "upd u e e\<le> upd u e'" 
     using \<open>inv_upd u (upd u e) e\<le> e' = (upd u e) e\<le> upd u e'\<close> by auto
   thus "the( application (the (weight p p')) e) e\<le> the (application (the (weight p p')) e')"
@@ -136,55 +144,322 @@ proof-
 qed
 
 lemma inverse_monotonic: 
-  "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> length e = dimension \<Longrightarrow> e e\<le> e' 
+  "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> e\<in>energies \<Longrightarrow> e e\<le> e' 
   \<Longrightarrow> inverse_application (the (weight p p')) e \<noteq> None 
   \<Longrightarrow> the( inverse_application (the (weight p p')) e) e\<le> the (inverse_application (the (weight p p')) e')"
 proof-
   fix p p' e e'
   assume "weight p p' \<noteq> None"
   define u where "u= the (weight p p')"
-  show "length e = dimension \<Longrightarrow> e e\<le> e' \<Longrightarrow> inverse_application (the (weight p p')) e \<noteq> None \<Longrightarrow> the( inverse_application (the (weight p p')) e) e\<le> the (inverse_application (the (weight p p')) e')"
+  show "e\<in>energies \<Longrightarrow> e e\<le> e' \<Longrightarrow> inverse_application (the (weight p p')) e \<noteq> None \<Longrightarrow> the( inverse_application (the (weight p p')) e) e\<le> the (inverse_application (the (weight p p')) e')"
   proof-
-    assume "length e = dimension" and " e e\<le> e'" and " inverse_application (the (weight p p')) e \<noteq> None"
+    assume "e\<in>energies" and " e e\<le> e'" and " inverse_application (the (weight p p')) e \<noteq> None"
 
     define e'' where "e'' = inv_upd u e'"
     have "inv_upd u e e\<le> e'' = e e\<le> upd u e''"
       unfolding u_def using \<open>weight p p' \<noteq> None\<close> proof(rule galois)
       show "apply_w p p' e'' \<noteq> None"
         unfolding e''_def using \<open>inverse_application (the (weight p p')) e \<noteq> None\<close>
-        by (metis \<open>e e\<le> e'\<close> \<open>length e = dimension\<close> \<open>weight p p' \<noteq> None\<close> domain_inv energy_leq_def u_def)
-      show "length e = dimension" using \<open> length e = dimension\<close>.
-      hence "length e' = dimension"
-        using \<open>e e\<le> e'\<close> by (simp add: energy_leq_def)
-      thus "length e'' = dimension"
+        using \<open>e \<in> energies\<close> \<open>e e\<le> e'\<close> \<open>weight p p' \<noteq> None\<close> inv_well_defined u_def upward_closed_energies by blast
+      show "e\<in>energies" using \<open>e\<in>energies\<close>.
+      hence "e'\<in>energies"
+        using \<open>e e\<le> e'\<close> energy_order ordering_def
+        using upward_closed_energies by blast
+      thus "e''\<in>energies"
         unfolding e''_def
-        by (simp add: \<open>weight p p' \<noteq> None\<close> inv_preserves_length u_def) 
+        using \<open>weight p p' \<noteq> None\<close> inv_well_defined u_def by blast 
     qed
 
     have "e' e\<le> upd u e''"
-      unfolding e''_def u_def using \<open>weight p p' \<noteq> None\<close> proof(rule upd_inv_increasing)
-      from \<open>length e = dimension\<close> show "length e' = dimension"
-        using \<open>e e\<le> e'\<close> by (simp add: energy_leq_def)
+      unfolding e''_def u_def using \<open>weight p p' \<noteq> None\<close> proof(rule leq_up_inv)
+      from \<open>e\<in>energies\<close> show "e'\<in>energies"
+        using \<open>e e\<le> e'\<close> energy_order ordering_def
+        using upward_closed_energies by blast
     qed
     
     hence "inv_upd u e e\<le> inv_upd u e'"
       using \<open>inv_upd u e e\<le> e'' = e e\<le> upd u e''\<close> e''_def
-      using \<open>e e\<le> e'\<close> energy_leq.trans by blast 
+      using \<open>e e\<le> e'\<close> energy_order ordering_def
+      using upward_closed_energies
+      by (metis (no_types, lifting) partial_preordering.trans) 
     thus "the( inverse_application (the (weight p p')) e) e\<le> the (inverse_application (the (weight p p')) e')"
       using u_def by auto
   qed
 qed
 
+text\<open>Properties of the partial order.\<close>
+
+
+definition energy_Min:: "'energy set \<Rightarrow> 'energy set" where
+  "energy_Min A = {e\<in>A . \<forall>e'\<in>A. e\<noteq>e' \<longrightarrow> \<not> (e' e\<le> e)}"
+
+fun enumerate_arbitrary :: "'a set \<Rightarrow> nat \<Rightarrow> 'a"  where
+  "enumerate_arbitrary A 0 = (SOME a. a \<in> A)" |
+  "enumerate_arbitrary A (Suc n) 
+    = enumerate_arbitrary (A - {enumerate_arbitrary A 0}) n"
+
+lemma enumerate_arbitrary_in: 
+  shows "infinite A \<Longrightarrow> enumerate_arbitrary A i \<in> A"
+proof(induct i arbitrary: A)
+  case 0
+  then show ?case using enumerate_arbitrary.simps finite.simps some_in_eq by auto 
+next
+  case (Suc i)
+  hence "infinite (A - {enumerate_arbitrary A 0})" using infinite_remove by simp
+  hence "enumerate_arbitrary (A - {enumerate_arbitrary A 0}) i \<in> (A - {enumerate_arbitrary A 0})" using Suc.hyps by blast
+  hence "enumerate_arbitrary A (Suc i) \<in> (A - {enumerate_arbitrary A 0})" using enumerate_arbitrary.simps by simp
+  then show ?case by auto
+qed
+
+lemma enumerate_arbitrary_neq:
+  shows "infinite A \<Longrightarrow> i < j 
+        \<Longrightarrow> enumerate_arbitrary A i \<noteq> enumerate_arbitrary A j"
+proof(induct i arbitrary: j A)
+  case 0
+  then show ?case using enumerate_arbitrary.simps
+    by (metis Diff_empty Diff_iff enumerate_arbitrary_in finite_Diff_insert gr0_implies_Suc insert_iff)
+next
+  case (Suc i)
+  hence "\<exists>j'. j = Suc j'"
+    by (simp add: not0_implies_Suc) 
+  from this obtain j' where "j = Suc j'" by auto
+  hence "i < j'" using Suc by simp
+  from Suc have "infinite (A - {enumerate_arbitrary A 0})" using infinite_remove by simp
+  hence "enumerate_arbitrary (A - {enumerate_arbitrary A 0}) i \<noteq> enumerate_arbitrary (A - {enumerate_arbitrary A 0}) j'" using Suc \<open>i < j'\<close>
+    by force
+  then show ?case using enumerate_arbitrary.simps
+    by (simp add: \<open>j = Suc j'\<close>) 
+qed
+
+lemma energy_Min_finite:
+  assumes "A \<subseteq> energies"
+  shows "finite (energy_Min A)"
+proof-
+  have "wqo_on order (energy_Min A)" using energy_wqo assms energy_Min_def wqo_on_subset
+    by (metis (no_types, lifting) mem_Collect_eq subsetI) 
+  hence wqoMin: "(\<forall>f \<in> SEQ (energy_Min A). (\<exists>i j. i < j \<and> order (f i) (f j)))" unfolding wqo_on_def almost_full_on_def good_def by simp
+  have "\<not> finite (energy_Min A) \<Longrightarrow> False" 
+  proof-
+    assume "\<not> finite (energy_Min A)"
+    hence "infinite (energy_Min A)"
+      by simp
+
+    define f where "f \<equiv> enumerate_arbitrary (energy_Min A)"
+    have fneq: "\<And>i j. f i \<in> energy_Min A \<and> (j \<noteq> i \<longrightarrow> f j \<noteq> f i)"
+    proof
+      fix i j 
+      show "f i \<in> energy_Min A" unfolding f_def using enumerate_arbitrary_in \<open>infinite (energy_Min A)\<close> by auto 
+      show "j \<noteq> i \<longrightarrow> f j \<noteq> f i" proof
+        assume "j \<noteq> i"
+        show "f j \<noteq> f i" proof(cases "j < i")
+          case True
+          then show ?thesis unfolding f_def using enumerate_arbitrary_neq \<open>infinite (energy_Min A)\<close> by auto 
+        next
+          case False
+          hence "i < j" using \<open>j \<noteq> i\<close> by auto
+          then show ?thesis unfolding f_def using enumerate_arbitrary_neq \<open>infinite (energy_Min A)\<close>
+            by metis 
+        qed
+      qed
+    qed
+    hence "\<exists>i j. i < j \<and> order (f i) (f j)" using wqoMin SEQ_def by simp
+    thus "False" using energy_Min_def fneq by force
+  qed
+  thus ?thesis by auto
+qed
+
+fun enumerate_decreasing :: "'energy set \<Rightarrow> nat \<Rightarrow> 'energy"  where
+  "enumerate_decreasing A 0 = (SOME a. a \<in> A)" |
+  "enumerate_decreasing A (Suc n) 
+    = (SOME x. (x \<in> A \<and> x e< enumerate_decreasing A n))"
+
+lemma energy_Min_not_empty:
+  assumes "A \<noteq> {}" and "A \<subseteq> energies" 
+  shows "energy_Min A \<noteq> {}"
+proof
+  have "wqo_on order A" using energy_wqo assms wqo_on_subset
+    by (metis (no_types, lifting)) 
+  hence wqoA: "(\<forall>f \<in> SEQ A. (\<exists>i j. i < j \<and> (f i) e\<le> (f j)))" unfolding wqo_on_def almost_full_on_def good_def by simp
+  assume "energy_Min A = {}"
+  have seq: "enumerate_decreasing A \<in> SEQ A"
+    unfolding SEQ_def proof
+    show "\<forall>i. enumerate_decreasing A i \<in> A"
+    proof
+      fix i 
+      show "enumerate_decreasing A i \<in> A"
+      proof(induct i)
+        case 0
+        then show ?case using assms
+          by (simp add: some_in_eq) 
+      next
+        case (Suc i)
+        show ?case 
+        proof(rule ccontr)
+          assume "enumerate_decreasing A (Suc i) \<notin> A"
+          hence "{x. (x \<in> A \<and> x e< enumerate_decreasing A i)}={}" unfolding enumerate_decreasing.simps
+            by (metis (no_types, lifting) empty_Collect_eq someI_ex)
+          thus "False"
+            using Suc \<open>energy_Min A = {}\<close> energy_Min_def by auto 
+        qed
+      qed
+    qed
+  qed
+
+  have "\<not>(\<exists>i j. i < j \<and> (enumerate_decreasing A i) e\<le> (enumerate_decreasing A j))"
+  proof-
+    have "\<forall>i j. \<not>(i < j \<and> (enumerate_decreasing A i) e\<le> (enumerate_decreasing A j))"
+    proof
+      fix i
+      show "\<forall>j. \<not>(i < j \<and> (enumerate_decreasing A i) e\<le> (enumerate_decreasing A j))"
+      proof
+        fix j
+        have leq: "i < j \<Longrightarrow> (enumerate_decreasing A j) e< (enumerate_decreasing A i)"
+        proof(induct "j-i" arbitrary: j i)
+          case 0
+          then show ?case
+            using \<open>i < j\<close> by linarith
+        next
+          case (Suc x)
+
+          have suc_i: "enumerate_decreasing A (Suc i) e< enumerate_decreasing A i"
+          proof-
+            have "{x. (x \<in> A \<and> x e< enumerate_decreasing A i)}\<noteq>{} "
+            proof
+              assume "{x \<in> A. x e< enumerate_decreasing A i} = {}"
+              hence "enumerate_decreasing A i \<in> energy_Min A" unfolding energy_Min_def
+                using seq by auto 
+              thus "False" using \<open>energy_Min A = {}\<close> by auto
+            qed
+            thus ?thesis unfolding enumerate_decreasing.simps
+              by (metis (mono_tags, lifting) empty_Collect_eq verit_sko_ex')
+          qed
+
+          have "j - (Suc i) = x" using Suc
+            by (metis Suc_diff_Suc nat.inject) 
+          then show ?case proof(cases "j = Suc i")
+            case True
+            then show ?thesis using suc_i
+              by simp 
+          next
+            case False
+            hence "enumerate_decreasing A j e< enumerate_decreasing A (Suc i)"
+              using Suc \<open>j - (Suc i) = x\<close>
+              using Suc_lessI by blast
+            then show ?thesis using suc_i energy_order ordering_def
+              by (metis (no_types, lifting) ordering_axioms_def partial_preordering.trans) 
+          qed
+        qed
+        
+        hence "i <j \<Longrightarrow> \<not>(enumerate_decreasing A i) e\<le> (enumerate_decreasing A j)"
+        proof-
+          assume "i <j"
+          hence "(enumerate_decreasing A j) e< (enumerate_decreasing A i)" using leq by auto
+          hence leq: "(enumerate_decreasing A j) e\<le> (enumerate_decreasing A i)" by simp
+          have neq: "(enumerate_decreasing A j) \<noteq> (enumerate_decreasing A i)"
+            using \<open>(enumerate_decreasing A j) e< (enumerate_decreasing A i)\<close>
+            by simp
+          show "\<not>(enumerate_decreasing A i) e\<le> (enumerate_decreasing A j)"
+          proof
+            assume "(enumerate_decreasing A i) e\<le> (enumerate_decreasing A j)"
+            hence "(enumerate_decreasing A i) = (enumerate_decreasing A j)" using leq leq energy_order ordering_def
+              by (simp add: ordering.antisym) 
+            thus "False" using neq by simp
+          qed
+        qed
+        thus "\<not>(i < j \<and> (enumerate_decreasing A i) e\<le> (enumerate_decreasing A j))" by auto
+      qed
+    qed
+    thus ?thesis
+      by simp
+    qed
+  thus "False" using seq wqoA
+    by blast 
+qed
+
+lemma energy_Min_contains_smaller:
+  assumes "a \<in> A" and "A \<subseteq> energies" 
+  shows "\<exists>b \<in> energy_Min A. b e\<le> a"
+proof-
+  define set where "set \<equiv> {e. e \<in> A \<and> e e\<le> a}"
+  hence "a \<in> set" using energy_order ordering_def
+    using assms ordering.eq_iff by fastforce  
+  hence "set \<noteq> {}" by auto
+  have "\<And>s. s\<in> set \<Longrightarrow> s\<in> energies" using energy_order set_def assms
+    by auto
+  hence "energy_Min set \<noteq> {}" using \<open>set \<noteq> {}\<close> energy_Min_not_empty
+    by (simp add: subsetI) 
+  hence "\<exists>b. b \<in> energy_Min set" by auto
+  from this obtain b where "b \<in> energy_Min set" by auto
+  hence "\<And>b'. b'\<in> A \<Longrightarrow> b' \<noteq> b \<Longrightarrow> \<not> (b' e\<le> b)"
+  proof-
+    fix b'
+    assume "b' \<in> A"
+    assume "b' \<noteq> b"
+    show "\<not> (b' e\<le> b)"
+    proof
+      assume "(b' e\<le> b)"
+      hence "b' e\<le> a" using \<open>b \<in> energy_Min set\<close> energy_Min_def energy_order ordering_def
+        by (metis (no_types, lifting) local.set_def mem_Collect_eq partial_preordering.trans) 
+      hence "b' \<in> set" using \<open>b' \<in> A\<close> set_def by simp
+      thus "False" using \<open>b \<in> energy_Min set\<close> energy_Min_def \<open>b' e\<le> b\<close> \<open>b' \<noteq> b\<close> by auto 
+    qed
+  qed
+  hence "b\<in> energy_Min A" using energy_Min_def
+    using \<open>b \<in> energy_Min set\<close> local.set_def by auto 
+  thus ?thesis using \<open>b \<in> energy_Min set\<close> energy_Min_def set_def by auto
+qed
+
+lemma energy_sup_leq_energy_sup:
+  assumes "A \<noteq> {}" and "\<And>a. a\<in> A \<Longrightarrow> \<exists>b\<in> B. order a b" and 
+          "\<And>a. a\<in> A \<Longrightarrow> a\<in> energies" and "finite A" and "finite B" and "B \<subseteq> energies"
+        shows "order (energy_sup A) (energy_sup B)"
+proof-
+  have A: "\<And>s'. energy_sup A \<in> energies \<and> (\<forall>s. s \<in> A \<longrightarrow> s e\<le> energy_sup A) \<and> (s' \<in> energies \<and>(\<forall>s. s \<in> A \<longrightarrow> s e\<le> s') \<longrightarrow> energy_sup A e\<le> s')" 
+  proof(rule bounded_join_semilattice)
+    fix s'
+    show "finite A" using assms by simp
+    show "A \<subseteq> energies" using assms
+      by (simp add: subsetI) 
+  qed
+
+  have B: "\<And>s'. energy_sup B \<in> energies \<and> (\<forall>s. s \<in> B \<longrightarrow> s e\<le> energy_sup B) \<and> (s' \<in> energies \<and>(\<forall>s. s \<in> B \<longrightarrow> s e\<le> s') \<longrightarrow> energy_sup B e\<le> s')" 
+  proof(rule bounded_join_semilattice)
+    fix s'
+    show " finite B" using assms by simp
+    show "B \<subseteq> energies"
+      using assms by simp
+  qed
+
+  have "energy_sup B \<in> energies \<and> (\<forall>s. s \<in> A \<longrightarrow> s e\<le> energy_sup B)"
+  proof
+    show "energy_sup B \<in> energies"
+      using B by simp
+    show " \<forall>s. s \<in> A \<longrightarrow> s e\<le> energy_sup B "
+    proof
+      fix s
+      show "s \<in> A \<longrightarrow> s e\<le> energy_sup B"
+      proof
+        assume "s \<in> A"
+        from this obtain b where "s e\<le> b" and "b \<in> B" using assms
+          by blast
+        hence "b e\<le> energy_sup B" using B by auto
+        thus "s e\<le> energy_sup B" using \<open>s e\<le> b\<close> energy_order ordering_def
+          by (metis (mono_tags, lifting) partial_preordering.trans) 
+      qed
+    qed
+  qed
+  thus ?thesis using A by auto
+qed
 
 text\<open>The set of energies is \<open>{e::energy. length e = dimension}\<close>. For this reason length checks are needed 
 and we redefine attacker winning budgets.\<close>
 
-inductive winning_budget_len::"energy \<Rightarrow> 'position \<Rightarrow> bool" where
- defender: "winning_budget_len e g" if "length e = dimension \<and> g \<notin> attacker 
+inductive winning_budget_len::"'energy \<Rightarrow> 'position \<Rightarrow> bool" where
+ defender: "winning_budget_len e g" if "e\<in>energies \<and> g \<notin> attacker 
             \<and> (\<forall>g'. (weight g g' \<noteq> None) \<longrightarrow> 
                     ((application (the (weight g g')) e)\<noteq> None 
                      \<and> (winning_budget_len (the (application (the (weight g g')) e))) g'))" |
- attacker: "winning_budget_len e g" if "length e = dimension \<and> g \<in> attacker 
+ attacker: "winning_budget_len e g" if "e\<in>energies \<and> g \<in> attacker 
             \<and> (\<exists>g'. (weight g g' \<noteq> None) 
                     \<and> (application (the (weight g g')) e)\<noteq> None 
                     \<and> (winning_budget_len (the (application (the (weight g g')) e)) g'))"
@@ -212,20 +487,20 @@ using assms proof (induct arbitrary: e' rule: winning_budget_len.induct)
           winning_budget_len (the (application (the (weight g g')) e')) g'" 
       proof
         show "application (the (weight g g')) e' \<noteq> None" using domain_upw_closed assms(2) A defender \<open>weight g g' \<noteq> None\<close> by blast
-        have "energy_leq (the (application (the (weight g g')) e)) (the (application (the (weight g g')) e'))" using assms A updates_monotonic
-          using \<open>weight g g' \<noteq> None\<close> defender.hyps defender.prems by blast  
+        have "order (the (application (the (weight g g')) e)) (the (application (the (weight g g')) e'))" using assms A updates_monotonic
+          using \<open>weight g g' \<noteq> None\<close> defender.hyps defender.prems by presburger  
         thus "winning_budget_len (the (application (the (weight g g')) e')) g'" using defender \<open>weight g g' \<noteq> None\<close> by blast
       qed
     qed
   qed
 thus ?case using winning_budget_len.intros(1) defender
-    by (smt (verit, del_insts) energy_leq_def)
+  by (meson upward_closed_energies)
 next
   case (attacker e g)
   from this obtain g' where G: "weight g g' \<noteq> None \<and>
           application (the (weight g g')) e \<noteq> None \<and>
           winning_budget_len (the (application (the (weight g g')) e)) g' \<and>
-          (\<forall>x. energy_leq (the (application (the (weight g g')) e)) x \<longrightarrow> winning_budget_len x g')" by blast
+          (\<forall>x. order (the (application (the (weight g g')) e)) x \<longrightarrow> winning_budget_len x g')" by blast
   have "weight g g' \<noteq> None \<and>
           application (the (weight g g')) e' \<noteq> None \<and>
           winning_budget_len (the (application (the (weight g g')) e')) g'" 
@@ -234,29 +509,30 @@ next
     show "application (the (weight g g')) e' \<noteq> None \<and> winning_budget_len (the (application (the (weight g g')) e')) g' " 
     proof
       show "application (the (weight g g')) e' \<noteq> None" using G  domain_upw_closed assms attacker by blast
-      have "energy_leq (the (application (the (weight g g')) e)) (the (application (the (weight g g')) e'))" using assms G updates_monotonic
-        by (simp add: attacker.hyps attacker.prems)
+      have "order (the (application (the (weight g g')) e)) (the (application (the (weight g g')) e'))" using assms G updates_monotonic
+        using attacker.hyps attacker.prems by blast
       thus "winning_budget_len (the (application (the (weight g g')) e')) g' " using G by blast
     qed
   qed
-  thus ?case using winning_budget_len.intros(2) attacker by (smt (verit, del_insts) energy_leq_def)
+  thus ?case using winning_budget_len.intros(2) attacker
+    using upward_closed_energies by blast
 qed
 
 text\<open>We now show that this definition is consistent with our previous definition of winning budgets.
 We show this by well-founded induction.\<close>
 
-abbreviation "reachable_positions_len s g e \<equiv> {(g',e') \<in> reachable_positions s g e . length e' = dimension}"
+abbreviation "reachable_positions_len s g e \<equiv> {(g',e') \<in> reachable_positions s g e . e'\<in>energies}"
 
 lemma winning_bugget_len_is_wb:
   assumes "nonpos_winning_budget = winning_budget"
-  shows "winning_budget_len e g = (winning_budget e g \<and> length e = dimension)"
+  shows "winning_budget_len e g = (winning_budget e g \<and>  e \<in>energies)"
 proof
   assume "winning_budget_len e g"
-  show "winning_budget e g \<and> length e = dimension"
+  show "winning_budget e g \<and> e \<in>energies"
   proof
     have "winning_budget_ind e g" 
       using \<open>winning_budget_len e g\<close> proof(rule winning_budget_len.induct)
-      show "\<And>e g. length e = dimension \<and>
+      show "\<And>e g. e \<in>energies \<and>
            g \<notin> attacker \<and>
            (\<forall>g'. weight g g' \<noteq> None \<longrightarrow>
                  apply_w g g' e \<noteq> None \<and>
@@ -265,7 +541,7 @@ proof
            winning_budget_ind e g"
         using winning_budget_ind.simps
         by meson 
-      show "\<And>e g. length e = dimension \<and>
+      show "\<And>e g. e \<in>energies \<and>
            g \<in> attacker \<and>
            (\<exists>g'. weight g g' \<noteq> None \<and>
                  apply_w g g' e \<noteq> None \<and>
@@ -277,12 +553,12 @@ proof
     qed
     thus "winning_budget e g" using assms inductive_winning_budget
       by fastforce 
-    show "length e = dimension" using \<open>winning_budget_len e g\<close> winning_budget_len.simps by blast 
+    show "e \<in>energies" using \<open>winning_budget_len e g\<close> winning_budget_len.simps by blast 
   qed
 next
-  show "winning_budget e g \<and> length e = dimension \<Longrightarrow> winning_budget_len e g" 
+  show "winning_budget e g \<and> e \<in>energies \<Longrightarrow> winning_budget_len e g" 
   proof-
-    assume A: "winning_budget e g \<and> length e = dimension"
+    assume A: "winning_budget e g \<and> e \<in>energies"
     hence "winning_budget_ind e g" using assms inductive_winning_budget by fastforce
     show "winning_budget_len e g" 
     proof-
@@ -317,7 +593,7 @@ next
                 valid_play (LCons g p) \<and>
                 play_consistent_attacker s (LCons g p) e \<and>
                 Some e' = energy_level e (LCons g p) (the_enat (llength p))} \<and>
-        length e' = dimension}" using A
+         e'\<in>energies}" using A
 
             by blast 
         qed
@@ -334,7 +610,7 @@ next
                                                     \<and> valid_play (LCons g p) 
                                                     \<and> play_consistent_attacker s (LCons g p) e
                                                     \<and> (Some e' = energy_level e (LCons g p) (the_enat (llength p))))
-                \<and> length e' = dimension"
+                \<and> e'\<in>energies"
             using \<open>y \<in> reachable_positions_len s g e\<close> unfolding reachable_positions_def
             by auto 
           from this obtain p where P: "(lfinite p \<and> llast (LCons g p) = g' 
@@ -470,8 +746,8 @@ next
                   qed
                 qed
 
-                have x_len: "length (upd (the (weight g' (the (s e' g')))) e') = dimension" using y_len
-                  by (metis P' \<open>energy_level e (LCons g p') (the_enat (llength p')) = apply_w g' (the (s e' g')) e'\<close> \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close> upd_preserves_legth option.distinct(1)) 
+                have x_len: "(upd (the (weight g' (the (s e' g')))) e') \<in>energies" using y_len
+                  by (metis P' \<open>energy_level e (LCons g p') (the_enat (llength p')) = apply_w g' (the (s e' g')) e'\<close> \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close> option.distinct(1) upd_well_defined)
                 hence "x \<in> reachable_positions_len s g e" using P' reachable_positions_def x_def by auto
 
                 have "(apply_w g' (the (s e' g')) e') \<noteq> None" using P'
@@ -484,7 +760,7 @@ next
                 hence "wb x" using ind \<open>x \<in> reachable_positions_len s g e\<close> by simp
                 hence "winning_budget_len (the (apply_w g' (the (s e' g')) e')) (the (s e' g'))" using wb_def x_def by simp
                 then show ?thesis using \<open>g' \<in> attacker\<close> winning_budget_ind.simps
-                  by (metis \<open>apply_w g' (the (s e' g')) e' \<noteq> None\<close> \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close> upd_preserves_legth winning_budget_len.attacker x_len) 
+                  by (meson \<open>apply_w g' (the (s e' g')) e' \<noteq> None\<close> \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close> winning_budget_len.attacker y_len) 
               qed
             next
               case False
@@ -687,9 +963,8 @@ next
                           qed
                         qed
 
-                        have x_len: "length (upd (the (weight g' g'')) e') = dimension" using y_len
-                          using \<open>apply_w g' g'' e' \<noteq> None\<close> upd_preserves_legth
-                          using \<open>weight g' g'' \<noteq> None\<close> by blast  
+                        have x_len: "(upd (the (weight g' g'')) e') \<in>energies" using y_len
+                          using \<open>apply_w g' g'' e' \<noteq> None\<close> \<open>weight g' g'' \<noteq> None\<close> upd_well_defined by auto 
 
                         thus "x \<in> reachable_positions_len s g e"
                           using X x_def reachable_positions_def
