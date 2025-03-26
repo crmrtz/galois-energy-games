@@ -1,0 +1,67 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{isabelle,isabellesym}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{stmaryrd}
+\usepackage{mathpartir}
+\usepackage{enumitem}
+\usepackage{geometry}
+\geometry{
+  left=3cm,
+  right=3cm,
+  top=2cm,
+  bottom=4cm,
+  bindingoffset=5mm
+}
+
+\usepackage{tikz}
+\usetikzlibrary{automata,positioning,calc, shapes.geometric, arrows}
+\usepackage{float}
+\usepackage{pdfsetup}
+
+\setlength\parindent{0pt}
+
+\urlstyle{rm}
+\isabellestyle{it}
+
+\definecolor{keyword}{RGB}{0,153,102}
+\definecolor{command}{RGB}{0,102,153}
+\isabellestyle{tt}
+\renewcommand{\isacommand}[1]{\textcolor{command}{\textbf{#1}}}
+\renewcommand{\isakeyword}[1]{\textcolor{keyword}{\textbf{#1}}}
+
+\newtheorem{definition}{Definition}
+
+
+\begin{document}
+
+\title{A Formal Proof of Decidability of Multi-Weighted Declining Energy Games}
+\author{Caroline Lemke}
+\maketitle
+
+\tableofcontents
+
+\input{introduction}
+\newpage
+\input{Energy_Game}
+\newpage
+\input{Energy_Order}
+\newpage
+\input{Update}
+\newpage
+\input{Bispings_Energy_Game}
+\newpage
+\input{Decidability}
+
+\newpage
+\section{References}
+\bibliographystyle{abbrv}
+\bibliography{root}
+
+\newpage
+\appendix
+\input{List_Lemmas}
+
+\end{document}

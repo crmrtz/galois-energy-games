@@ -1,13 +1,13 @@
 # Galois energy games
 
-This repository contains a formal proof of decidability of Galois energy games over vectors of naturals.
+This repository contains a formal proof of decidability of Galois energy games.
 The Isabelle theories are an enhancement of the theories developed as part of the master's thesis "A Formal Proof of Decidability of Multi-weighted Declining Energy Games" written by Caroline Lemke at the Technical University of Berlin. 
 
 ## Structure of the Repository
 
 - **`/isabelle-theories`**: This folder contains the current Isabelle theories and the documents built from these. The latter presents the formal proofs.
   
-- **`/submitted-documents`**: This folder contains the documents built from the Isabelle theories originally submitted. These files correspond to the version of the formalisation the master's thesis references.
+- **`/master-thesis`**: This folder contains the master's thesis as well as the originally submitted isabelle theories and the corresponding documents built. These files correspond to the version of the formalisation the master's thesis references.
 
 ## Overview
 
