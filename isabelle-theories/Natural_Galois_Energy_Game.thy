@@ -5,8 +5,8 @@ theory Natural_Galois_Energy_Game
 begin
 
 text\<open>We now define Galois energy games over vectors of naturals with the component-wise order. 
-We formalise this in this theory as an \<open>energy_game\<close> with a fixed dimension. In particular, we assume all updates to have an upward-closed domain (as \<open>domain_upw_closed\<close>) and be length-preserving (as \<open>len_appl\<close>). 
-We assume the latter for the inversion of updates too (as \<open>len_inv_appl\<close>) and assume that the inversion of an update is a total mapping from energies to the domain of the update (as \<open>domain_inv\<close>). \<close>
+We formalise this in this theory as an \<open>energy_game\<close> with a fixed dimension. In particular, we assume all updates to have an upward-closed domain (as \<open>domain_upw_closed\<close>) and be length-preserving (as \<open>upd_preserves_length\<close>). 
+We assume the latter for the inversion of updates too (as \<open>inv_preserves_length\<close>) and assume that the inversion of an update is a total mapping from energies to the domain of the update (as \<open>domain_inv\<close>). \<close>
 
 locale natural_galois_energy_game = energy_game attacker weight application
   for   attacker ::  "'position set" and 
@@ -17,11 +17,10 @@ locale natural_galois_energy_game = energy_game attacker weight application
   fixes dimension :: "nat"
   assumes
     domain_upw_closed: "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> e e\<le> e' \<Longrightarrow> application (the (weight p p')) e \<noteq> None \<Longrightarrow> application (the (weight p p')) e' \<noteq> None"
-    and len_appl: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> application (the (weight p p')) e \<noteq> None \<Longrightarrow> length (the (application (the (weight p p')) e)) = length e"
-    and len_inv_appl: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> length e = dimension \<Longrightarrow> length (the (inverse_application (the (weight p p')) e)) = length e"
+    and updgalois: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> application (the (weight p p')) e \<noteq> None \<Longrightarrow> length (the (application (the (weight p p')) e)) = length e"
+    and inv_preserves_length: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> length e = dimension \<Longrightarrow> length (the (inverse_application (the (weight p p')) e)) = length e"
     and domain_inv: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> length e = dimension \<Longrightarrow> (inverse_application (the (weight p p')) e) \<noteq> None \<and> application (the (weight p p')) (the (inverse_application (the (weight p p')) e)) \<noteq> None"
     and galois: "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> application (the (weight p p')) e' \<noteq> None \<Longrightarrow> length e = dimension \<Longrightarrow> length e' = dimension \<Longrightarrow> (the (inverse_application (the (weight p p')) e)) e\<le> e' = e e\<le> (the (application (the (weight p p')) e'))"
-
 
 sublocale natural_galois_energy_game \<subseteq> galois_energy_game attacker weight application inverse_application "{e::energy. length e = dimension}" energy_leq "\<lambda>s. energy_sup dimension s"
 proof
@@ -62,10 +61,11 @@ proof
     unfolding Energy_Order.energy_leq_def by simp
 
   show "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> application (the (weight p p')) e \<noteq> None \<Longrightarrow> e \<in> {e::energy. length e = dimension} \<Longrightarrow> (the (application (the (weight p p')) e)) \<in> {e::energy. length e = dimension}"
-    using len_appl by simp 
+    using inv_preserves_length
+    by (simp add: updgalois) 
 
   show  "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> e \<in> {e::energy. length e = dimension} \<Longrightarrow> (inverse_application (the (weight p p')) e) \<noteq> None \<and> (the (inverse_application (the (weight p p')) e)) \<in> {e::energy. length e = dimension} \<and> application (the (weight p p')) (the (inverse_application (the (weight p p')) e)) \<noteq> None" 
-    using len_inv_appl domain_inv by simp
+    using inv_preserves_length domain_inv by simp
 
   show "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> energy_leq e e' \<Longrightarrow> application (the (weight p p')) e \<noteq> None \<Longrightarrow> application (the (weight p p')) e' \<noteq> None"
     using local.domain_upw_closed .

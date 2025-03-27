@@ -889,7 +889,7 @@ proof
                 proof 
                   from A1 A2 show "application (the (weight g g')) (the (inverse_application (the (weight g g')) e')) \<noteq> None" using inv_well_defined
                     by (simp add: \<open>e' \<in> energies\<close>) 
-                  have "order e' (the (application (the (weight g g')) (the (inverse_application (the (weight g g')) e'))))" using leq_up_inv
+                  have "order e' (the (application (the (weight g g')) (the (inverse_application (the (weight g g')) e'))))" using upd_inv_increasing
                     using A2 \<open>e' \<in> energies\<close> by blast 
                   thus "winning_budget_len (the (application (the (weight g g')) (the (inverse_application (the (weight g g')) e')))) g'" using  upwards_closure_wb_len
                     using A3 by auto 
@@ -917,7 +917,7 @@ proof
           using \<open>e \<in> energies\<close> upd_well_defined by blast 
         hence W: "winning_budget_len (the (inverse_application (the (weight g g')) (the (application (the (weight g g')) e)))) g" using G attacker_inv_in_winning_budget
           by (meson A1)
-        have "order (the (inverse_application (the (weight g g')) (the (application (the (weight g g')) e)))) e" using inv_up_leq
+        have "order (the (inverse_application (the (weight g g')) (the (application (the (weight g g')) e)))) e" using inv_upd_decreasing
           using G
           using \<open>e \<in> energies\<close> by blast
         hence E: "e = (the (inverse_application (the (weight g g')) (the (application (the (weight g g')) e))))" using W A1 A2 energy_Min_def
@@ -992,7 +992,7 @@ proof
                     proof
 
                       have "e' e\<le> (upd (the (weight g g')) x)" 
-                        using X leq_up_inv 
+                        using X upd_inv_increasing 
                         by (metis winning_budget_len.simps)
                       have "winning_budget_len (inv_upd (the (weight g g')) e') g"
                         using X attacker_inv_in_winning_budget \<open>weight g g' \<noteq> None\<close> \<open>g \<in> attacker\<close>
@@ -1291,7 +1291,7 @@ proof
                 using leq domain_upw_closed
                 using \<open>weight g g' \<noteq> None\<close> by blast  
 
-              have "order e (the (application (the (weight g g')) (strat g')))" using leq_up_inv 
+              have "order e (the (application (the (weight g g')) (strat g')))" using upd_inv_increasing 
                 by (metis \<open>application (the (weight g g')) (strat g') = application (the (weight g g')) (the (inverse_application (the (weight g g')) e))\<close> \<open>e \<in> energies\<close> \<open>weight g g' \<noteq> None\<close>) 
               hence W: "winning_budget_len (the (application (the (weight g g')) (strat g'))) g'" using E upwards_closure_wb_len
                 by blast
@@ -1357,7 +1357,7 @@ proof
             using A1 A2 winning_budget_len.cases energy_Min_def
             by (metis (mono_tags, lifting) mem_Collect_eq) 
           from \<open>weight g g' \<noteq> None\<close> have "strat g' = the ((inverse_application (the (weight g g'))) (the (application (the (weight g g')) e)))" using S by auto
-          thus "order (strat g') e" using inv_up_leq  \<open>application (the (weight g g')) e \<noteq> None\<close>
+          thus "order (strat g') e" using inv_upd_decreasing  \<open>application (the (weight g g')) e \<noteq> None\<close>
             using \<open>e \<in> energies\<close> \<open>weight g g' \<noteq> None\<close> by presburger
         qed
 
@@ -1578,7 +1578,7 @@ proof
                           by (metis \<open>weight g g' \<noteq> None\<close> )
                         thus "application (the (weight g g')) e' \<noteq> None" using domain_upw_closed \<open>order (strat g') e'\<close>
                           using \<open>weight g g' \<noteq> None\<close> by blast
-                        have "order e'' (the (application (the (weight g g')) (strat g')))" using E leq_up_inv
+                        have "order e'' (the (application (the (weight g g')) (strat g')))" using E upd_inv_increasing
                           using \<open>e'' \<in> energies\<close> \<open>weight g g' \<noteq> None\<close>  by metis
                         hence W: "winning_budget_len (the (application (the (weight g g')) (strat g'))) g'" using upwards_closure_wb_len
                           using E by blast
@@ -2348,7 +2348,7 @@ proof-
                       qed
 
                       have A1: "index g' e\<le> upd (the (weight g g')) (inv_upd (the (weight g g')) (index g'))"
-                        using leq_up_inv  \<open>S (index g') g' \<and> index g' \<in> a_win g'\<close> winning_budget_len.simps
+                        using upd_inv_increasing  \<open>S (index g') g' \<and> index g' \<in> a_win g'\<close> winning_budget_len.simps
                         using \<open>weight g g' \<noteq> None\<close> by blast
                       have A2: "upd (the (weight g g')) (inv_upd (the (weight g g')) (index g')) e\<le>
     upd (the (weight g g')) e" using leq updates_monotonic  \<open>weight g g' \<noteq> None\<close>
@@ -2380,7 +2380,7 @@ proof-
           from this obtain g' e' where "weight g g' \<noteq> None" and "(S e' g' \<and> e' \<in> a_win g') \<and> e = inv_upd (the (weight g g')) e'" by auto
           hence "e' e\<le> upd (the (weight g g')) e" 
             using  updates_monotonic inv_well_defined inv_well_defined
-            by (metis length_S leq_up_inv)
+            by (metis length_S upd_inv_increasing)
           show "winning_budget_len e g" 
           proof(rule winning_budget_len.intros(2))
             show "e \<in> energies \<and>
@@ -2636,7 +2636,7 @@ proof-
                   using E inverse_monotonic  \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close>
                   using x_len
                   using inv_well_defined length_S by blast  
-                hence "(inv_upd (the (weight g' (the (s e' g')))) e'') e\<le> e'" using inv_up_leq  \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close>
+                hence "(inv_upd (the (weight g' (the (s e' g')))) e'') e\<le> e'" using inv_upd_decreasing  \<open>s e' g' \<noteq> None \<and> weight g' (the (s e' g')) \<noteq> None\<close>
                   using \<open>apply_w g' (the (s e' g')) e' \<noteq> None\<close> energy_order ordering_def 
                   by (metis (mono_tags, lifting) E \<open>apply_w g' (the (s e' g')) e' \<noteq> None\<close> \<open>y = (g', e')\<close> \<open>y \<in> reachable_positions_len s g e\<close> case_prodD galois_energy_game.galois galois_energy_game_decidable.length_S galois_energy_game_decidable_axioms galois_energy_game_axioms mem_Collect_eq)
                 thus "P y" unfolding P_def \<open>y = (g', e')\<close>
@@ -2879,7 +2879,7 @@ proof-
                 using inverse_monotonic P
                 by (meson inv_well_defined length_S)
               hence  "\<And>g''. weight g' g'' \<noteq> None \<Longrightarrow> inv_upd (the (weight g' g'')) (index g'') e\<le> e'" 
-                using inv_up_leq P
+                using inv_upd_decreasing P
                 by (meson I galois length_S y_len)     
               hence all: "\<forall>s. s \<in> {inv_upd (the (weight g' g'')) (index g'')| g''. weight g' g'' \<noteq> None}\<longrightarrow> s e\<le> e'"
                 by auto

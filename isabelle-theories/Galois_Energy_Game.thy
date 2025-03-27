@@ -54,7 +54,10 @@ abbreviation "inv_upd u e \<equiv> the (inverse_application u e)"
 abbreviation energy_l:: "'energy \<Rightarrow> 'energy \<Rightarrow> bool" (infix "e<" 80) where 
   "energy_l e e' \<equiv>  e e\<le> e' \<and> e \<noteq> e'"
 
-lemma leq_up_inv: 
+subsection\<open>Properties of Galois connections\<close>
+text\<open>The following properties are described by Erné et al.~\cite{galois}. \<close>
+
+lemma upd_inv_increasing: 
    "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> e\<in>energies 
     \<Longrightarrow> order e (the (application (the (weight p p')) (the (inverse_application (the (weight p p')) e))))"
 proof-
@@ -84,7 +87,7 @@ proof-
   qed
 qed
 
-lemma inv_up_leq: 
+lemma inv_upd_decreasing: 
   "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> e\<in>energies 
   \<Longrightarrow> application (the (weight p p')) e \<noteq> None 
   \<Longrightarrow> the (inverse_application (the (weight p p')) (the (application (the (weight p p')) e))) e\<le> e"
@@ -132,7 +135,7 @@ proof-
 
   have "inv_upd u (upd u e) e\<le> e" 
     unfolding u_def using \<open>weight p p' \<noteq> None\<close> \<open>e\<in>energies\<close> \<open>application (the (weight p p')) e \<noteq> None\<close> 
-  proof(rule inv_up_leq)
+  proof(rule inv_upd_decreasing)
   qed
 
   hence "inv_upd u (upd u e) e\<le> e'" using \<open>e e\<le> e'\<close> energy_order ordering_def
@@ -171,7 +174,7 @@ proof-
     qed
 
     have "e' e\<le> upd u e''"
-      unfolding e''_def u_def using \<open>weight p p' \<noteq> None\<close> proof(rule leq_up_inv)
+      unfolding e''_def u_def using \<open>weight p p' \<noteq> None\<close> proof(rule upd_inv_increasing)
       from \<open>e\<in>energies\<close> show "e'\<in>energies"
         using \<open>e e\<le> e'\<close> energy_order ordering_def
         using upward_closed_energies by blast
@@ -187,8 +190,61 @@ proof-
   qed
 qed
 
-text\<open>Properties of the partial order.\<close>
+text\<open>Galois connections compose. In particular, the ``inverse'' of $u_g$ composed with that of $u_p$ is the ``inverse'' of $u_p \circ u_g$. 
+This forms a Galois connection between the set of energies and the reverse image under $u_g$ of the domain of $u_p$, i.e.\ $u_g^{-1} (\text{dom}(u_p))$\<close>
 
+lemma galois_composition:
+  assumes "weight g g' \<noteq> None" and "weight p p' \<noteq> None"
+  shows  "\<exists>inv. \<forall>e \<in> energies. \<forall>e'\<in> energies. (application (the (weight g g')) e' \<noteq> None 
+          \<and> application (the (weight p p')) ((upd (the (weight g g')) e')) \<noteq> None) 
+          \<longrightarrow> (order (inv e) e') = (order e (upd (the (weight p p')) ((upd (the (weight g g')) e'))))"
+proof
+  define inv where "inv \<equiv> \<lambda>x. inv_upd (the (weight g g')) (inv_upd (the (weight p p')) x)"
+  show "\<forall>e\<in>energies. \<forall>e'\<in>energies. apply_w g g' e' \<noteq> None \<and> apply_w p p' (upd (the (weight g g')) e') \<noteq> None \<longrightarrow> inv e e\<le> e' = e e\<le> upd (the (weight p p')) (upd (the (weight g g')) e')"
+  proof
+    fix e 
+    assume E: "e\<in>energies"
+    show "\<forall>e'\<in>energies. apply_w g g' e' \<noteq> None \<and> apply_w p p' (upd (the (weight g g')) e') \<noteq> None \<longrightarrow> inv e e\<le> e' = e e\<le> upd (the (weight p p')) (upd (the (weight g g')) e')"
+    proof
+      fix e'
+      assume E': "e'\<in>energies"
+      show "apply_w g g' e' \<noteq> None \<and> apply_w p p' (upd (the (weight g g')) e') \<noteq> None \<longrightarrow> inv e e\<le> e' = e e\<le> upd (the (weight p p')) (upd (the (weight g g')) e')"
+      proof
+        assume dom: "apply_w g g' e' \<noteq> None \<and> apply_w p p' (upd (the (weight g g')) e') \<noteq> None"
+
+        define x where "x=inv_upd (the (weight p p')) e "
+        have "inv_upd (the (weight g g')) x e\<le> e' = x e\<le> upd (the (weight g g')) e'"
+        proof(rule galois)
+          show "weight g g' \<noteq> None" using assms by simp
+          show "apply_w g g' e' \<noteq> None" using dom by simp
+          show "x \<in> energies"
+            unfolding x_def using dom
+            using E assms(2) inv_well_defined by blast 
+          show "e' \<in> energies" using E' .
+        qed
+        hence A1: "inv e e\<le> e' = inv_upd (the (weight p p')) e e\<le> upd (the (weight g g')) e'"
+          unfolding inv_def x_def .
+
+        define y where "y = (upd (the (weight g g')) e')"
+        have "inv_upd (the (weight p p')) e e\<le> y = e e\<le> upd (the (weight p p')) y"
+        proof(rule galois)
+          show "weight p p' \<noteq> None" using assms by simp
+          show "apply_w p p' y \<noteq> None" unfolding y_def using dom by simp
+          show "e \<in> energies" using E .
+          show "y \<in> energies" unfolding y_def
+            using E' assms(1) dom upd_well_defined by auto 
+        qed
+        hence A2: "inv_upd (the (weight p p')) e e\<le> upd (the (weight g g')) e' = e e\<le> upd (the (weight p p')) (upd (the (weight g g')) e')"
+          unfolding inv_def y_def .
+        show "inv e e\<le> e' = e e\<le> upd (the (weight p p')) (upd (the (weight g g')) e')"
+          using A1 A2 by simp
+      qed
+    qed
+  qed
+qed
+
+subsection\<open>Properties of the Partial Order\<close>
+text\<open>We now establish some properties of the partial order focusing on the set of minimal elements.\<close>
 
 definition energy_Min:: "'energy set \<Rightarrow> 'energy set" where
   "energy_Min A = {e\<in>A . \<forall>e'\<in>A. e\<noteq>e' \<longrightarrow> \<not> (e' e\<le> e)}"
@@ -451,8 +507,9 @@ proof-
   thus ?thesis using A by auto
 qed
 
-text\<open>The set of energies is \<open>{e::energy. length e = dimension}\<close>. For this reason length checks are needed 
-and we redefine attacker winning budgets.\<close>
+
+subsection\<open>Winning Budgets Revisited\<close>
+text\<open>We now redefine attacker winning budgets to only include energies in the set \<open>energies\<close>.\<close>
 
 inductive winning_budget_len::"'energy \<Rightarrow> 'position \<Rightarrow> bool" where
  defender: "winning_budget_len e g" if "e\<in>energies \<and> g \<notin> attacker 
