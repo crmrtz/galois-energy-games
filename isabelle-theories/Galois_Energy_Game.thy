@@ -57,136 +57,152 @@ abbreviation energy_l:: "'energy \<Rightarrow> 'energy \<Rightarrow> bool" (infi
 subsection\<open>Properties of Galois connections\<close>
 text\<open>The following properties are described by Erné et al.~\cite{galois}. \<close>
 
-lemma upd_inv_increasing: 
+
+lemma galois_properties: 
+  shows upd_inv_increasing: 
    "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> e\<in>energies 
     \<Longrightarrow> order e (the (application (the (weight p p')) (the (inverse_application (the (weight p p')) e))))"
-proof-
-  fix p p' e 
-  assume "weight p p' \<noteq> None" 
-  define u where "u= the (weight p p')"
-  show "e\<in>energies  \<Longrightarrow> order e (the (application (the (weight p p')) (the (inverse_application (the (weight p p')) e))))"
-  proof-
-    assume "e\<in>energies"
-    have "order (inv_upd u e) (inv_upd u e)"
-      by (meson local.energy_order ordering.eq_iff)
-
-    define e' where "e' = inv_upd u e"
-    have "(inv_upd u e e\<le> e') = e e\<le> upd u e'"
-      unfolding u_def using \<open>weight p p' \<noteq> None\<close> proof(rule galois)
-      show "apply_w p p' e' \<noteq> None"
-        using \<open>e\<in>energies\<close> \<open>weight p p' \<noteq> None\<close> e'_def inv_well_defined u_def by presburger
-      show "e\<in>energies" using \<open>e\<in>energies\<close>.
-      show "e'\<in>energies" unfolding e'_def
-        using \<open>e\<in>energies\<close> \<open>weight p p' \<noteq> None\<close> inv_well_defined u_def
-        by blast
-    qed   
-    hence "e e\<le> upd u (inv_upd u e)"
-      using  \<open>inv_upd u e e\<le> inv_upd u e\<close> e'_def by auto
-    thus "order e (the (application (the (weight p p')) (the (inverse_application (the (weight p p')) e))))"
-      using u_def by auto
-  qed
-qed
-
-lemma inv_upd_decreasing: 
+   and inv_upd_decreasing: 
   "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> e\<in>energies 
   \<Longrightarrow> application (the (weight p p')) e \<noteq> None 
   \<Longrightarrow> the (inverse_application (the (weight p p')) (the (application (the (weight p p')) e))) e\<le> e"
-proof-
-  fix p p' e 
-  assume "weight p p' \<noteq> None" 
-  define u where "u= the (weight p p')"
-  show "e\<in>energies \<Longrightarrow> application (the (weight p p')) e \<noteq> None \<Longrightarrow> the (inverse_application (the (weight p p')) (the (application (the (weight p p')) e))) e\<le> e"
-  proof-
-    assume "e\<in>energies" and "application (the (weight p p')) e \<noteq> None"
-    define e' where "e'= upd u e"
-    have "(inv_upd u e' e\<le> e) = e' e\<le> upd u e"
-      unfolding u_def using \<open>weight p p' \<noteq> None\<close> \<open>application (the (weight p p')) e \<noteq> None\<close> proof(rule galois)
-      show \<open>e\<in>energies\<close>  using \<open>e\<in>energies\<close> .
-      show \<open>e'\<in>energies\<close> unfolding e'_def using \<open>e\<in>energies\<close>
-        using \<open>apply_w p p' e \<noteq> None\<close> \<open>weight p p' \<noteq> None\<close> u_def upd_well_defined by auto 
-    qed
-    hence "inv_upd u (upd u e) e\<le> e" using e'_def
-      by (meson energy_order ordering.eq_iff) 
-    thus "the (inverse_application (the (weight p p')) (the (application (the (weight p p')) e))) e\<le> e"
-      using u_def by simp
-  qed
-qed
-
-lemma updates_monotonic: 
+  and updates_monotonic: 
   "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow>e\<in>energies \<Longrightarrow> e e\<le> e' 
   \<Longrightarrow> application (the (weight p p')) e \<noteq> None 
   \<Longrightarrow> the( application (the (weight p p')) e) e\<le> the (application (the (weight p p')) e')"
-proof-
-  fix p p' e e' 
-  assume "weight p p' \<noteq> None" and "e\<in>energies" and "e e\<le> e'" and "application (the (weight p p')) e \<noteq> None"
-  define u where "u= the (weight p p')"
-  define e'' where "e'' = upd u e"
-  have "inv_upd u (upd u e) e\<le> e' = (upd u e) e\<le> upd u e'" 
-    unfolding u_def using \<open>weight p p' \<noteq> None\<close> proof(rule galois)
-    show "apply_w p p' e' \<noteq> None"
-      using \<open>application (the (weight p p')) e \<noteq> None\<close> \<open>e e\<le> e'\<close> domain_upw_closed
-      using \<open>weight p p' \<noteq> None\<close> by blast 
-    show "(upd (the (weight p p')) e)\<in>energies"
-      using \<open>e\<in>energies\<close> \<open>weight p p' \<noteq> None\<close> upd_well_defined
-      using \<open>apply_w p p' e \<noteq> None\<close> by blast
-    show "e'\<in>energies"
-      using \<open>e\<in>energies\<close> \<open>e e\<le> e'\<close> upward_closed_energies by auto
-  qed
-
-  have "inv_upd u (upd u e) e\<le> e" 
-    unfolding u_def using \<open>weight p p' \<noteq> None\<close> \<open>e\<in>energies\<close> \<open>application (the (weight p p')) e \<noteq> None\<close> 
-  proof(rule inv_upd_decreasing)
-  qed
-
-  hence "inv_upd u (upd u e) e\<le> e'" using \<open>e e\<le> e'\<close> energy_order ordering_def
-    by (metis (mono_tags, lifting) partial_preordering.trans) 
-  hence "upd u e e\<le> upd u e'" 
-    using \<open>inv_upd u (upd u e) e\<le> e' = (upd u e) e\<le> upd u e'\<close> by auto
-  thus "the( application (the (weight p p')) e) e\<le> the (application (the (weight p p')) e')"
-    using u_def by auto
-qed
-
-lemma inverse_monotonic: 
+  and inverse_monotonic: 
   "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> e\<in>energies \<Longrightarrow> e e\<le> e' 
   \<Longrightarrow> inverse_application (the (weight p p')) e \<noteq> None 
   \<Longrightarrow> the( inverse_application (the (weight p p')) e) e\<le> the (inverse_application (the (weight p p')) e')"
 proof-
-  fix p p' e e'
-  assume "weight p p' \<noteq> None"
-  define u where "u= the (weight p p')"
-  show "e\<in>energies \<Longrightarrow> e e\<le> e' \<Longrightarrow> inverse_application (the (weight p p')) e \<noteq> None \<Longrightarrow> the( inverse_application (the (weight p p')) e) e\<le> the (inverse_application (the (weight p p')) e')"
+  show upd_inv_increasing: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> e\<in>energies 
+    \<Longrightarrow> order e (the (application (the (weight p p')) (the (inverse_application (the (weight p p')) e))))"
   proof-
-    assume "e\<in>energies" and " e e\<le> e'" and " inverse_application (the (weight p p')) e \<noteq> None"
+    fix p p' e 
+    assume "weight p p' \<noteq> None" 
+    define u where "u= the (weight p p')"
+    show "e\<in>energies  \<Longrightarrow> order e (the (application (the (weight p p')) (the (inverse_application (the (weight p p')) e))))"
+    proof-
+      assume "e\<in>energies"
+      have "order (inv_upd u e) (inv_upd u e)"
+        by (meson local.energy_order ordering.eq_iff)
 
-    define e'' where "e'' = inv_upd u e'"
-    have "inv_upd u e e\<le> e'' = e e\<le> upd u e''"
+      define e' where "e' = inv_upd u e"
+      have "(inv_upd u e e\<le> e') = e e\<le> upd u e'"
+        unfolding u_def using \<open>weight p p' \<noteq> None\<close> proof(rule galois)
+        show "apply_w p p' e' \<noteq> None"
+          using \<open>e\<in>energies\<close> \<open>weight p p' \<noteq> None\<close> e'_def inv_well_defined u_def by presburger
+        show "e\<in>energies" using \<open>e\<in>energies\<close>.
+        show "e'\<in>energies" unfolding e'_def
+          using \<open>e\<in>energies\<close> \<open>weight p p' \<noteq> None\<close> inv_well_defined u_def
+          by blast
+      qed   
+      hence "e e\<le> upd u (inv_upd u e)"
+        using  \<open>inv_upd u e e\<le> inv_upd u e\<close> e'_def by auto
+      thus "order e (the (application (the (weight p p')) (the (inverse_application (the (weight p p')) e))))"
+        using u_def by auto
+    qed
+  qed
+
+  show inv_upd_decreasing: "\<And>p p' e. weight p p' \<noteq> None \<Longrightarrow> e\<in>energies 
+  \<Longrightarrow> application (the (weight p p')) e \<noteq> None 
+  \<Longrightarrow> the (inverse_application (the (weight p p')) (the (application (the (weight p p')) e))) e\<le> e"
+  proof-
+    fix p p' e 
+    assume "weight p p' \<noteq> None" 
+    define u where "u= the (weight p p')"
+    show "e\<in>energies \<Longrightarrow> application (the (weight p p')) e \<noteq> None \<Longrightarrow> the (inverse_application (the (weight p p')) (the (application (the (weight p p')) e))) e\<le> e"
+    proof-
+      assume "e\<in>energies" and "application (the (weight p p')) e \<noteq> None"
+      define e' where "e'= upd u e"
+      have "(inv_upd u e' e\<le> e) = e' e\<le> upd u e"
+        unfolding u_def using \<open>weight p p' \<noteq> None\<close> \<open>application (the (weight p p')) e \<noteq> None\<close> proof(rule galois)
+        show \<open>e\<in>energies\<close>  using \<open>e\<in>energies\<close> .
+        show \<open>e'\<in>energies\<close> unfolding e'_def using \<open>e\<in>energies\<close>
+          using \<open>apply_w p p' e \<noteq> None\<close> \<open>weight p p' \<noteq> None\<close> u_def upd_well_defined by auto 
+      qed
+      hence "inv_upd u (upd u e) e\<le> e" using e'_def
+        by (meson energy_order ordering.eq_iff) 
+      thus "the (inverse_application (the (weight p p')) (the (application (the (weight p p')) e))) e\<le> e"
+        using u_def by simp
+    qed
+  qed
+
+  show updates_monotonic:"\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow>e\<in>energies \<Longrightarrow> e e\<le> e' 
+  \<Longrightarrow> application (the (weight p p')) e \<noteq> None 
+  \<Longrightarrow> the( application (the (weight p p')) e) e\<le> the (application (the (weight p p')) e')"
+  proof-
+    fix p p' e e' 
+    assume "weight p p' \<noteq> None" and "e\<in>energies" and "e e\<le> e'" and "application (the (weight p p')) e \<noteq> None"
+    define u where "u= the (weight p p')"
+    define e'' where "e'' = upd u e"
+    have "inv_upd u (upd u e) e\<le> e' = (upd u e) e\<le> upd u e'" 
       unfolding u_def using \<open>weight p p' \<noteq> None\<close> proof(rule galois)
-      show "apply_w p p' e'' \<noteq> None"
-        unfolding e''_def using \<open>inverse_application (the (weight p p')) e \<noteq> None\<close>
-        using \<open>e \<in> energies\<close> \<open>e e\<le> e'\<close> \<open>weight p p' \<noteq> None\<close> inv_well_defined u_def upward_closed_energies by blast
-      show "e\<in>energies" using \<open>e\<in>energies\<close>.
-      hence "e'\<in>energies"
-        using \<open>e e\<le> e'\<close> energy_order ordering_def
-        using upward_closed_energies by blast
-      thus "e''\<in>energies"
-        unfolding e''_def
-        using \<open>weight p p' \<noteq> None\<close> inv_well_defined u_def by blast 
+      show "apply_w p p' e' \<noteq> None"
+        using \<open>application (the (weight p p')) e \<noteq> None\<close> \<open>e e\<le> e'\<close> domain_upw_closed
+        using \<open>weight p p' \<noteq> None\<close> by blast 
+      show "(upd (the (weight p p')) e)\<in>energies"
+        using \<open>e\<in>energies\<close> \<open>weight p p' \<noteq> None\<close> upd_well_defined
+        using \<open>apply_w p p' e \<noteq> None\<close> by blast
+      show "e'\<in>energies"
+        using \<open>e\<in>energies\<close> \<open>e e\<le> e'\<close> upward_closed_energies by auto
     qed
 
-    have "e' e\<le> upd u e''"
-      unfolding e''_def u_def using \<open>weight p p' \<noteq> None\<close> proof(rule upd_inv_increasing)
-      from \<open>e\<in>energies\<close> show "e'\<in>energies"
-        using \<open>e e\<le> e'\<close> energy_order ordering_def
-        using upward_closed_energies by blast
+    have "inv_upd u (upd u e) e\<le> e" 
+      unfolding u_def using \<open>weight p p' \<noteq> None\<close> \<open>e\<in>energies\<close> \<open>application (the (weight p p')) e \<noteq> None\<close> 
+    proof(rule inv_upd_decreasing)
     qed
-    
-    hence "inv_upd u e e\<le> inv_upd u e'"
-      using \<open>inv_upd u e e\<le> e'' = e e\<le> upd u e''\<close> e''_def
-      using \<open>e e\<le> e'\<close> energy_order ordering_def
-      using upward_closed_energies
-      by (metis (no_types, lifting) partial_preordering.trans) 
-    thus "the( inverse_application (the (weight p p')) e) e\<le> the (inverse_application (the (weight p p')) e')"
+
+    hence "inv_upd u (upd u e) e\<le> e'" using \<open>e e\<le> e'\<close> energy_order ordering_def
+      by (metis (mono_tags, lifting) partial_preordering.trans) 
+    hence "upd u e e\<le> upd u e'" 
+      using \<open>inv_upd u (upd u e) e\<le> e' = (upd u e) e\<le> upd u e'\<close> by auto
+    thus "the( application (the (weight p p')) e) e\<le> the (application (the (weight p p')) e')"
       using u_def by auto
+  qed
+
+  show inverse_monotonic: "\<And>p p' e e'. weight p p' \<noteq> None \<Longrightarrow> e\<in>energies \<Longrightarrow> e e\<le> e' 
+  \<Longrightarrow> inverse_application (the (weight p p')) e \<noteq> None 
+  \<Longrightarrow> the( inverse_application (the (weight p p')) e) e\<le> the (inverse_application (the (weight p p')) e')"
+  proof-
+    fix p p' e e'
+    assume "weight p p' \<noteq> None"
+    define u where "u= the (weight p p')"
+    show "e\<in>energies \<Longrightarrow> e e\<le> e' \<Longrightarrow> inverse_application (the (weight p p')) e \<noteq> None \<Longrightarrow> the( inverse_application (the (weight p p')) e) e\<le> the (inverse_application (the (weight p p')) e')"
+    proof-
+      assume "e\<in>energies" and " e e\<le> e'" and " inverse_application (the (weight p p')) e \<noteq> None"
+
+      define e'' where "e'' = inv_upd u e'"
+      have "inv_upd u e e\<le> e'' = e e\<le> upd u e''"
+        unfolding u_def using \<open>weight p p' \<noteq> None\<close> proof(rule galois)
+        show "apply_w p p' e'' \<noteq> None"
+          unfolding e''_def using \<open>inverse_application (the (weight p p')) e \<noteq> None\<close>
+          using \<open>e \<in> energies\<close> \<open>e e\<le> e'\<close> \<open>weight p p' \<noteq> None\<close> inv_well_defined u_def upward_closed_energies by blast
+        show "e\<in>energies" using \<open>e\<in>energies\<close>.
+        hence "e'\<in>energies"
+          using \<open>e e\<le> e'\<close> energy_order ordering_def
+          using upward_closed_energies by blast
+        thus "e''\<in>energies"
+          unfolding e''_def
+          using \<open>weight p p' \<noteq> None\<close> inv_well_defined u_def by blast 
+      qed
+
+      have "e' e\<le> upd u e''"
+        unfolding e''_def u_def using \<open>weight p p' \<noteq> None\<close> 
+      proof(rule upd_inv_increasing)
+        from \<open>e\<in>energies\<close> show "e'\<in>energies"
+          using \<open>e e\<le> e'\<close> energy_order ordering_def
+          using upward_closed_energies by blast
+      qed
+    
+      hence "inv_upd u e e\<le> inv_upd u e'"
+        using \<open>inv_upd u e e\<le> e'' = e e\<le> upd u e''\<close> e''_def
+        using \<open>e e\<le> e'\<close> energy_order ordering_def
+        using upward_closed_energies
+        by (metis (no_types, lifting) partial_preordering.trans) 
+      thus "the( inverse_application (the (weight p p')) e) e\<le> the (inverse_application (the (weight p p')) e')"
+        using u_def by auto
+    qed
   qed
 qed
 
