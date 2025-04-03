@@ -2,25 +2,36 @@
 \section{Introduction}
  
 \noindent
-We provide a formal proof of decidability of Galois energy games over vectors of naturals with the component-wise order. 
-Afterwards we consider an instantiation of \textit{Bisping's declining energy games}.
-Bisping, Nestmann, and Jansen~\cite{bispingNestmann,bispingJansenNestmann} generalised 
-Stirling's bisimulation game~\cite{stirling-bisim} to find Hennessy-Milner logic (HML) formulae distinguishing 
-processes. Those formalae are elements of some HML-sublanguage from 
-van Glabbeek’s linear-time-branching-time spectrum\cite{vanGlabbeek} 
-and thus their existence is a statement about behavioural equivalences.
-The HML-sublanguages from the linear-time-branching-time spectrum can be characterised by depth properties, 
-which can be represented by six-dimensional vectors of extended natural numbers. Understanding these 
-vectors as energies Bisping~\cite{bens-algo} developed a multi-weighted energy game deciding all common 
-notions of (strong) behavioural equivalences at once, the \textit{spectroscopy game}. 
+Building on Benjamin Bisping's research\cite{bens-algo}, 
+we study (multi-weighted) energy games with reachability winning conditions. 
+These are zero-sum two-player games with perfect information played on directed graphs 
+labelled by (multi-weighted) energy functions. 
 
-This game is part of a class of energy games Bisping~\cite{bens-algo} calls \textit{declining energy games}.
-Bisping provides an algorithm, which he claims decides this class of energy games if the set of positions is finite.
-We substantiate this claim by providing a proof in Isabelle/HOL using a simplyfied and generalised version of that algorithm.
-To do so we first formalise energy games with reachability winning conditions in Energy\_Game.thy. 
+Bisping, Nestmann, and Jansen~\cite{bens-algo,bispingJansenNestmann,bispingNestmann} generalised 
+Stirling's bisimulation game~\cite{stirling-bisim} to decide all common notions of behavioural equivalence at once.
+Bisping~\cite{bens-algo} introduces a class of energy games, called \textit{declining energy games}.
+Bisping provides an algorithm to compute minimal attacker winning budgets (i.e. Pareto fronts), 
+which he claims decides this class of energy games if the set of positions is finite.
+We substantiate this claim by providing a proof in Isabelle/HOL using a simplyfied and generalised version of that algorithm~\cite{Lemke2024}.
+
+We abstract the necessary properties used in the proof and introduce a new class of energy games: Galois energy games. 
+In such games updates can be undone through Galois connections, yielding a weakened form of inversion sufficient 
+for an algorihm similar to standard shortest path algorithms. 
+We estabish decidability of the unknown and known initial credit problem for Galois energy games 
+over well-founded bounded join-semilattices with a finite set of positions. 
+
+Galois energy games can be instantiated to common energy games, declining energy games~\cite{bens-algo}, multi-weighted reachability games~\cite{lexicograph} and  
+coverability on vector addition systems with states~\cite{kunnemann2023coverability}. 
+By conforming a subclass relationship (via sublocales) we conclude decidability of Galois energy games 
+over vectors of (extended) naturals with the component-wise order. Finally, we show this in the case 
+of vector-addition and min-updates only, subsuming the case of Bisping's declining energy games.
+
+First, we formalise energy games with reachability winning conditions in Energy\_Game.thy. 
 Building upon this, we then formalise Galois energy games in Galois\_Energy\_Game.thy and prove decidability in Decidability.thy.
-Finally, we formalise a superclass of Bisping's declining energy games in Bispings\_Energy\_Game.thy. In particular, we do not assume the games to be declining.
+Finally, we formalise a superclass of Bisping's declining energy games in Natural\_Galois\_Energy\_Game.thy. 
+In particular, we do not assume the games to be declining.
 An overview of all our theories is given by the following figure, where the theories above are imported by the ones below.
+
 
 \begin{figure}[H]
 \begin{center}
