@@ -13,6 +13,7 @@ Further, we assume the updates to actually map energies (elements of the set \<o
 and assume the inversion to map updates to total functions between the set of energies and the domain of the update in \<open>inv_well_defined\<close>.
 The latter is assumed to be upward-closed in \<open>domain_upw_closed\<close>.
 Finally, we assume the updates to be Galois-connected with their inverse in \<open>galois\<close>. 
+(This corresponds to section 2.3 in the preprint~\cite{preprint}.)
  \<close>
 
 locale galois_energy_game = energy_game attacker weight application

@@ -8,6 +8,7 @@ text\<open>In this theory we give a proof of decidability for Galois energy game
 We do this by providing a proof of correctness of the simplifyed version of
 Bisping's Algorithm to calculate minimal attacker winning budgets. 
 We further formalise the key argument for its termination.
+(This corresponds to section 3.2 in the preprint~\cite{preprint}.)
 \<close>
 
 locale galois_energy_game_decidable = galois_energy_game attacker weight application inverse_application energies order energy_sup

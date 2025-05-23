@@ -7,31 +7,36 @@ we study (multi-weighted) energy games with reachability winning conditions.
 These are zero-sum two-player games with perfect information played on directed graphs 
 labelled by (multi-weighted) energy functions. 
 
-Bisping, Nestmann, and Jansen~\cite{bens-algo,bispingJansenNestmann,bispingNestmann} generalised 
-Stirling's bisimulation game~\cite{stirling-bisim} to decide all common notions of behavioural equivalence at once.
-Bisping~\cite{bens-algo} introduces a class of energy games, called \textit{declining energy games}.
-Bisping provides an algorithm to compute minimal attacker winning budgets (i.e. Pareto fronts), 
-which he claims decides this class of energy games if the set of positions is finite.
-We substantiate this claim by providing a proof in Isabelle/HOL using a simplyfied and generalised version of that algorithm~\cite{Lemke2024}.
+Bisping~\cite{bens-algo} introduces a class of energy games, called \textit{declining energy games} 
+and provides an algorithm to compute minimal attacker winning budgets (i.e. Pareto fronts).
+He claims decidability of this class of energy games if the set of positions is finite.
+We substantiate this claim by providing a formal proof using a simplyfied and generalised version 
+of that algorithm~\cite{Lemke2024}.
 
-We abstract the necessary properties used in the proof and introduce a new class of energy games: Galois energy games. 
-In such games updates can be undone through Galois connections, yielding a weakened form of inversion sufficient 
-for an algorihm similar to standard shortest path algorithms. 
+We abstract the necessary properties used in the proof and introduce a new 
+class of energy games: Galois energy games. In such games updates can be 
+undone through Galois connections, yielding a weakened form of inversion 
+sufficient for an algorihm similar to standard shortest path algorithms.
 We estabish decidability of the unknown and known initial credit problem for Galois energy games 
-over well-founded bounded join-semilattices with a finite set of positions. 
+over well-founded bounded join-semilattices with a finite set of positions.
 
 Galois energy games can be instantiated to common energy games, declining energy games~\cite{bens-algo}, multi-weighted reachability games~\cite{lexicograph} and  
 coverability on vector addition systems with states~\cite{kunnemann2023coverability}. 
-By conforming a subclass relationship (via sublocales) we conclude decidability of Galois energy games 
+By confirming a subclass relationship (via sublocales) we conclude decidability of Galois energy games 
 over vectors of (extended) naturals with the component-wise order. Finally, we show this in the case 
 of vector-addition and min-updates only, subsuming the case of Bisping's declining energy games.
 
-First, we formalise energy games with reachability winning conditions in Energy\_Game.thy. 
-Building upon this, we then formalise Galois energy games in Galois\_Energy\_Game.thy and prove decidability in Decidability.thy.
-Finally, we formalise a superclass of Bisping's declining energy games in Natural\_Galois\_Energy\_Game.thy. 
-In particular, we do not assume the games to be declining.
-An overview of all our theories is given by the following figure, where the theories above are imported by the ones below.
+For a broader perspective on the formalised results, including motivation, a high-level proof outline, 
+complexity considerations, and connections to related work, we refer to the preprint~\cite{preprint}.
 
+\subsection*{Theory Structure}
+
+We now give an overview of all our theories.
+In summary, we first formalise energy games with reachability winning conditions (in Energy\_Game.thy), 
+then formalise Galois energy games (in Galois\_Energy\_Game.thy) and prove decidability (in Decidability.thy).
+Finally, we formalise a superclass of Bisping's declining energy games (in Natural\_Galois\_Energy\_Game.thy) and conclude decidability.
+
+The file strucrture is given by the following excerpt of the session graph, where the theories above are imported by the ones below.
 
 \begin{figure}[H]
 \begin{center}
@@ -66,12 +71,15 @@ An overview of all our theories is given by the following figure, where the theo
 
 Energy games are formalised as two-player zero-sum games with perfect information and reachability winning conditions played on labeled directed graphs in Energy\_Game.thy. 
 In particular, strategies and an inductive characterisation of winning budgets is discussed.
+(This corresponds to section 2.1 and 2.2 in the preprint~\cite{preprint}.)
 
 Galois energy games over well-founded bounded join-semilattices are formalized in Galois\_Energy\_Game.thy. 
+(This corresponds to section 2.3 in the preprint~\cite{preprint}.)
 
 In Decidability.thy we formalise one iteration of a simplyfied and generalised version of Bisping's algorithm. 
 Using an order on possible Pareto fronts we are able to apply Kleene's fixed point theorem. 
 Assuming the game graph to be finite we then prove correctness of the algorithm. Further, we provide the key argument for termination, thus proving decidability of Galois energy games.
+(This corresponds to section 3.2 in the preprint~\cite{preprint}.)
 
 The file List\_Lemmas.thy contains a few simple observations about lists, specifically when using \texttt{those}. This file's contents can be found in the appendix.
 
@@ -83,3 +91,4 @@ Further, we introduce a generalisation of Bisping's inversion and relate it to t
 In Natural\_Galois\_Energy\_Game.thy we formalise galois energy games over the previously defined with a fixed dimension. 
 Afterwards, we formalise a subclass of such games where all edges of the game graph are labeled with a representation of the previously discussed updates (and thereby formalise Bisping's declining energy games).
 Finally, we establish the subclass-relationships and thereby conclude decidability. 
+(This corresponds to section 4.2 in the preprint~\cite{preprint}.)

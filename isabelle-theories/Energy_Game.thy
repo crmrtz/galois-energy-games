@@ -7,7 +7,8 @@ begin
 text\<open>Energy games are two-player zero-sum games with perfect information played on labeled directed graphs. 
 The labels contain information on how each edge affects the current energy.
 We call the two players attacker and defender.
-In this theory we give fundamental definitions of plays, energy levels and (winning) attacker strategies.\<close>
+In this theory we give fundamental definitions of plays, energy levels and (winning) attacker strategies.
+(This corresponds to section 2.1 and 2.2 in the preprint~\cite{preprint}.)\<close>
 
 locale energy_game =
   fixes attacker ::  "'position set" and 

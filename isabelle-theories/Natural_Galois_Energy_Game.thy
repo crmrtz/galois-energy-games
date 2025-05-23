@@ -6,7 +6,8 @@ begin
 
 text\<open>We now define Galois energy games over vectors of naturals with the component-wise order. 
 We formalise this in this theory as an \<open>energy_game\<close> with a fixed dimension. In particular, we assume all updates to have an upward-closed domain (as \<open>domain_upw_closed\<close>) and be length-preserving (as \<open>upd_preserves_length\<close>). 
-We assume the latter for the inversion of updates too (as \<open>inv_preserves_length\<close>) and assume that the inversion of an update is a total mapping from energies to the domain of the update (as \<open>domain_inv\<close>). \<close>
+We assume the latter for the inversion of updates too (as \<open>inv_preserves_length\<close>) and assume that the inversion of an update is a total mapping from energies to the domain of the update (as \<open>domain_inv\<close>). 
+(This corresponds to section 4.2 in the preprint~\cite{preprint}.)\<close>
 
 locale natural_galois_energy_game = energy_game attacker weight application
   for   attacker ::  "'position set" and 
