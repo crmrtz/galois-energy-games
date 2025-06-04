@@ -1,11 +1,11 @@
 # Galois energy games
 
-This repository contains a formal proof of decidability of Galois energy games.
+This repository contains an Isabelle/HOL proof of decidability of Galois energy games and as well as a formal proof of decidability of monotonic energy games.
 The Isabelle theories are an enhancement of the theories developed as part of the master's thesis "A Formal Proof of Decidability of Multi-weighted Declining Energy Games" written by Caroline Lemke at the Technical University of Berlin. 
 
 ## Structure of the Repository
 
-- **`/isabelle-theories`**: This folder contains the current Isabelle theories and the documents built from these. The latter presents the formal proofs.
+- **`/isabelle-theories`**: This folder contains the current Isabelle theories and the documents built from these. The latter presents the Isabelle/HOL proofs.
   
 - **`/master-thesis`**: This folder contains the master's thesis as well as the originally submitted isabelle theories and the corresponding documents built. These files correspond to the version of the formalisation the master's thesis references.
 
@@ -17,6 +17,8 @@ We abstract the necessary properties used in the proof and introduce new classes
 In such games updates can be undone through Galois connections, yielding a weakened form of inversion sufficient for an algorihm similar to standard shortest path algorithms. 
 Simplifying and generalising Bisping's algorithm we prove the decidability for Galois energy games over well-founded bounded join-semilattices with a finite set of positions.
 In particular Galois energy games over vectors of (extended) naturals with the component-wise order are decidable. We show that Bisping's declining energy games as well as energy games with vector addition are such Galois energy games and are thus decidable.
+
+Generalising the algorithm and the accompanying proofs even further, we obtain decidability results for an even larger class of energy games: monotonic energy games. These results are presented in the master's thesis only.
 
 
 ### Important Note: Theories have evolved
